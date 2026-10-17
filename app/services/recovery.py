@@ -15,27 +15,32 @@ Preserves existing confirmed bookings and operational state (generates proposals
 Cross-CHC resource borrowing is documented as restricted by single-CHC manager RBAC boundaries.
 """
 
-from datetime import date, timedelta
+import json
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import cast
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import verify_chc_manager_access
 from app.core.config import settings
-from app.models.availability import MachineAvailability
+from app.models.availability import MachineAvailability, OperatorAvailability
 from app.models.booking import Booking
 from app.models.identity import User
 from app.models.recovery import MachineBreakdown, RecoveryPlan, RecoveryPlanItem
 from app.models.resource import Attachment, Machine, Operator
+from app.models.supporting import AuditLog
 from app.schemas.recovery import (
     BookingRecoveryPlan,
     BreakdownRecoveryResponse,
     RecoveryAlternativeResponse,
+    RecoveryPlanExecutionResponse,
 )
 from app.services.breakdown import get_affected_bookings_query
 from app.services.feasibility import evaluate_feasibility
+from app.services.notification import send_dispatch_notification
 
 
 def score_recovery_alternative(
@@ -579,4 +584,393 @@ def generate_breakdown_recovery_alternatives(
             "Cross-CHC resource borrowing is restricted by current single-CHC manager "
             "RBAC boundaries. All evaluated alternatives originate from host CHC fleet."
         ),
+    )
+
+
+def get_recovery_plan(
+    db: Session,
+    plan_id: int,
+    current_user: User,
+) -> RecoveryPlan:
+    """Retrieve an existing RecoveryPlan and its items with CHC authorization check (T14)."""
+    plan = db.execute(
+        select(RecoveryPlan)
+        .options(
+            selectinload(RecoveryPlan.breakdown).selectinload(MachineBreakdown.machine),
+            selectinload(RecoveryPlan.items),
+        )
+        .where(RecoveryPlan.id == plan_id)
+    ).scalar_one_or_none()
+
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan with ID {plan_id} not found",
+        )
+
+    verify_chc_manager_access(current_user, plan.breakdown.machine.chc_id)
+    return plan
+
+
+def approve_and_execute_recovery_plan(
+    db: Session,
+    plan_id: int,
+    current_user: User,
+    ip_address: str | None = None,
+) -> RecoveryPlanExecutionResponse:
+    """Validate and atomically execute a proposed recovery plan (T14).
+
+    Validates:
+    - CHC manager authorization and tenant boundary.
+    - Plan state is PROPOSED (prevents duplicate execution or execution of rejected plans).
+    - Live re-validation: evaluates each item against live machine/attachment compatibility,
+      operator qualifications and availability, booking conflicts, travel radius, and deadlines.
+    - Atomically updates bookings to SCHEDULED and marks availability slots BOOKED/ASSIGNED.
+    - If any validation or mutation fails, rolls back completely.
+    - Dispatches notifications to farmers and replacement operators.
+    - Records immutable AuditLog with previous and new assignment details.
+    """
+    plan = db.execute(
+        select(RecoveryPlan)
+        .options(
+            selectinload(RecoveryPlan.breakdown).selectinload(MachineBreakdown.machine),
+            selectinload(RecoveryPlan.items)
+            .selectinload(RecoveryPlanItem.affected_booking)
+            .selectinload(Booking.service_request),
+            selectinload(RecoveryPlan.items)
+            .selectinload(RecoveryPlanItem.affected_booking)
+            .selectinload(Booking.booking_attachments),
+            selectinload(RecoveryPlan.items).selectinload(RecoveryPlanItem.replacement_operator),
+            selectinload(RecoveryPlan.items).selectinload(RecoveryPlanItem.replacement_machine),
+        )
+        .where(RecoveryPlan.id == plan_id)
+    ).scalar_one_or_none()
+
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan with ID {plan_id} not found",
+        )
+
+    chc_id = plan.breakdown.machine.chc_id
+    verify_chc_manager_access(current_user, chc_id)
+
+    # Prevent duplicate approvals or executing rejected/invalid plans
+    if plan.status in ("EXECUTED", "ACCEPTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recovery plan #{plan_id} has already been approved and executed",
+        )
+    if plan.status == "REJECTED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot approve rejected recovery plan #{plan_id}",
+        )
+    if plan.status != "PROPOSED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Recovery plan #{plan_id} is in '{plan.status}' status; "
+                "only PROPOSED plans can be approved"
+            ),
+        )
+    if not plan.items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recovery plan #{plan_id} contains no recovery actions to execute",
+        )
+
+    # 1. Live re-validation against current database state before modifying anything
+    for item in plan.items:
+        booking = item.affected_booking
+        if not booking:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Affected booking for recovery item #{item.id} not found",
+            )
+        if booking.status in ("CANCELLED", "COMPLETED"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Affected booking {booking.booking_code} is already {booking.status}",
+            )
+
+        target_date = item.new_scheduled_date or booking.scheduled_date
+        target_slot = booking.scheduled_slot
+        target_machine_id = item.replacement_machine_id
+        target_operator_id = item.replacement_operator_id or booking.operator_id
+        att_ids = [ba.attachment_id for ba in booking.booking_attachments]
+
+        sr = booking.service_request
+        feasibility = evaluate_feasibility(
+            db=db,
+            chc_id=chc_id,
+            scheduled_date=target_date,
+            scheduled_slot=target_slot,
+            service_request_id=booking.service_request_id,
+            machine_id=target_machine_id,
+            operator_id=target_operator_id,
+            attachment_ids=att_ids,
+            field_latitude=sr.field_latitude if sr else None,
+            field_longitude=sr.field_longitude if sr else None,
+            acreage=sr.acreage if sr else None,
+            exclude_booking_id=booking.id,
+        )
+
+        if not feasibility.feasible:
+            conflict_msg = "; ".join(feasibility.reasons)
+            # Record audit log for failed execution attempt
+            db.add(
+                AuditLog(
+                    chc_id=chc_id,
+                    user_id=current_user.id,
+                    action="FAILED_RECOVERY_APPROVAL",
+                    entity_type="RECOVERY_PLAN",
+                    entity_id=str(plan.id),
+                    payload_after=json.dumps(
+                        {
+                            "booking_id": booking.id,
+                            "booking_code": booking.booking_code,
+                            "reasons": feasibility.reasons,
+                        }
+                    ),
+                    ip_address=ip_address,
+                )
+            )
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Conflict detected during recovery approval for booking "
+                    f"{booking.booking_code}: {conflict_msg}"
+                ),
+            )
+
+    # 2. Atomic execution within database transaction
+    payload_before_list: list[dict[str, object]] = []
+    payload_after_list: list[dict[str, object]] = []
+    notifications_count = 0
+
+    try:
+        for item in plan.items:
+            booking = item.affected_booking
+            target_date = item.new_scheduled_date or booking.scheduled_date
+            target_slot = booking.scheduled_slot
+
+            payload_before_list.append(
+                {
+                    "booking_id": booking.id,
+                    "booking_code": booking.booking_code,
+                    "machine_id": booking.machine_id,
+                    "operator_id": booking.operator_id,
+                    "scheduled_date": str(booking.scheduled_date),
+                    "status": booking.status,
+                }
+            )
+
+            # Mutate booking
+            booking.machine_id = item.replacement_machine_id
+            booking.operator_id = item.replacement_operator_id
+            booking.scheduled_date = target_date
+            booking.status = "SCHEDULED"
+
+            # Update or create MachineAvailability slot
+            m_slot = db.execute(
+                select(MachineAvailability).where(
+                    MachineAvailability.machine_id == item.replacement_machine_id,
+                    MachineAvailability.slot_date == target_date,
+                    MachineAvailability.slot_type == target_slot,
+                )
+            ).scalar_one_or_none()
+            if m_slot:
+                m_slot.status = "BOOKED"
+                m_slot.note = f"Booked via Recovery Plan #{plan.id}"
+            else:
+                db.add(
+                    MachineAvailability(
+                        machine_id=cast(int, item.replacement_machine_id),
+                        slot_date=target_date,
+                        slot_type=target_slot,
+                        status="BOOKED",
+                        note=f"Booked via Recovery Plan #{plan.id}",
+                    )
+                )
+
+            # Update or create OperatorAvailability slot
+            if item.replacement_operator_id:
+                op_slot = db.execute(
+                    select(OperatorAvailability).where(
+                        OperatorAvailability.operator_id == item.replacement_operator_id,
+                        OperatorAvailability.slot_date == target_date,
+                        OperatorAvailability.slot_type == target_slot,
+                    )
+                ).scalar_one_or_none()
+                if op_slot:
+                    op_slot.status = "ASSIGNED"
+                    op_slot.note = f"Assigned via Recovery Plan #{plan.id}"
+                else:
+                    db.add(
+                        OperatorAvailability(
+                            operator_id=item.replacement_operator_id,
+                            slot_date=target_date,
+                            slot_type=target_slot,
+                            status="ASSIGNED",
+                            note=f"Assigned via Recovery Plan #{plan.id}",
+                        )
+                    )
+
+            # Mark plan item COMPLETED
+            item.status = "COMPLETED"
+
+            payload_after_list.append(
+                {
+                    "booking_id": booking.id,
+                    "booking_code": booking.booking_code,
+                    "new_machine_id": item.replacement_machine_id,
+                    "new_operator_id": item.replacement_operator_id,
+                    "new_scheduled_date": str(target_date),
+                    "status": "SCHEDULED",
+                }
+            )
+
+            # Queue dispatch notification to farmer
+            if booking.service_request and booking.service_request.farmer_id:
+                send_dispatch_notification(
+                    db=db,
+                    user_id=booking.service_request.farmer_id,
+                    title="Recovery Plan Approved: Booking Reassigned",
+                    message=(
+                        f"Your booking {booking.booking_code} has been reassigned to machine "
+                        f"#{item.replacement_machine_id} on {target_date} ({target_slot})."
+                    ),
+                    channel="PUSH",
+                )
+                notifications_count += 1
+
+            # Queue dispatch notification to replacement operator
+            if item.replacement_operator and item.replacement_operator.user_id:
+                send_dispatch_notification(
+                    db=db,
+                    user_id=item.replacement_operator.user_id,
+                    title="Dispatch Assignment: Breakdown Recovery",
+                    message=(
+                        f"You have been assigned to booking {booking.booking_code} "
+                        f"on {target_date} ({target_slot})."
+                    ),
+                    channel="SMS",
+                )
+                notifications_count += 1
+
+        # Mark plan EXECUTED
+        plan.status = "EXECUTED"
+        plan.approved_by_id = current_user.id
+
+        # Update breakdown status to RECOVERING
+        if plan.breakdown and plan.breakdown.status != "RESOLVED":
+            plan.breakdown.status = "RECOVERING"
+
+        # Record AuditLog
+        audit = AuditLog(
+            chc_id=chc_id,
+            user_id=current_user.id,
+            action="APPROVE_RECOVERY_PLAN",
+            entity_type="RECOVERY_PLAN",
+            entity_id=str(plan.id),
+            payload_before=json.dumps(payload_before_list),
+            payload_after=json.dumps(payload_after_list),
+            ip_address=ip_address,
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(audit)
+        audit_id = audit.id
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return RecoveryPlanExecutionResponse(
+        plan_id=plan.id,
+        breakdown_id=plan.breakdown_id,
+        status="EXECUTED",
+        message=(
+            f"Recovery plan #{plan.id} successfully approved and executed "
+            f"across {len(plan.items)} bookings."
+        ),
+        executed_items_count=len(plan.items),
+        audit_log_id=audit_id,
+        notifications_dispatched_count=notifications_count,
+        executed_at=datetime.now(UTC),
+    )
+
+
+def reject_recovery_plan(
+    db: Session,
+    plan_id: int,
+    current_user: User,
+    reason: str | None = None,
+    ip_address: str | None = None,
+) -> RecoveryPlanExecutionResponse:
+    """Reject a proposed recovery plan without modifying operational bookings or resources (T14)."""
+    plan = db.execute(
+        select(RecoveryPlan)
+        .options(
+            selectinload(RecoveryPlan.breakdown).selectinload(MachineBreakdown.machine),
+            selectinload(RecoveryPlan.items),
+        )
+        .where(RecoveryPlan.id == plan_id)
+    ).scalar_one_or_none()
+
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan with ID {plan_id} not found",
+        )
+
+    chc_id = plan.breakdown.machine.chc_id
+    verify_chc_manager_access(current_user, chc_id)
+
+    if plan.status in ("EXECUTED", "ACCEPTED"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recovery plan #{plan_id} has already been executed and cannot be rejected",
+        )
+    if plan.status == "REJECTED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recovery plan #{plan_id} has already been rejected",
+        )
+
+    # Transition plan to REJECTED and mark items FAILED
+    plan.status = "REJECTED"
+    for item in plan.items:
+        item.status = "FAILED"
+
+    audit = AuditLog(
+        chc_id=chc_id,
+        user_id=current_user.id,
+        action="REJECT_RECOVERY_PLAN",
+        entity_type="RECOVERY_PLAN",
+        entity_id=str(plan.id),
+        payload_before=json.dumps({"status": "PROPOSED"}),
+        payload_after=json.dumps(
+            {
+                "status": "REJECTED",
+                "reason": reason or "No reason provided by manager",
+            }
+        ),
+        ip_address=ip_address,
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return RecoveryPlanExecutionResponse(
+        plan_id=plan.id,
+        breakdown_id=plan.breakdown_id,
+        status="REJECTED",
+        message=f"Recovery plan #{plan.id} has been rejected.",
+        executed_items_count=0,
+        audit_log_id=audit.id,
+        notifications_dispatched_count=0,
+        executed_at=datetime.now(UTC),
     )

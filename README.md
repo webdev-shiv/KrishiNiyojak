@@ -132,7 +132,7 @@ stateDiagram-v2
 
 ---
 
-## 🚀 Working Features & Capabilities (Verified T01–T11)
+## 🚀 Working Features & Capabilities (Verified T01–T14)
 
 The project includes an operational backend verified through automated pytest test suites and isolated database fixtures:
 
@@ -146,6 +146,7 @@ The project includes an operational backend verified through automated pytest te
 | **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review (`GET /api/v1/schedules/{id}`), list (`GET /api/v1/schedules?chc_id=...`), non-destructive rejection (`POST /api/v1/schedules/{id}/reject`), and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
 | **Breakdown Impact & Customer Priority (T12)** | ✅ Verified | In-field breakdown incident reporting (`POST /api/v1/breakdowns` & `POST /api/v1/machines/{id}/breakdown`), machine status transition (`BROKEN_DOWN`), maintenance slot blocking, dependent booking identification (excluding cancelled/completed), status transition to `DISRUPTED`, and transparent customer priority scoring (1-100) based on deadline urgency, downtime, crop criticality, and acreage with explanatory rationales (`GET /api/v1/breakdowns/{id}/impact`). |
 | **Recovery Alternatives & Ranking (T13)** | ✅ Verified | Operational recovery alternative generation for disrupted bookings (`POST /api/v1/breakdowns/{id}/recovery-alternatives` & `GET /api/v1/breakdowns/{id}/recovery-alternatives`). Evaluates compatible CHC fleet machinery, horsepower, implement attachments, and operator availability via the T10 Feasibility Checker. Ranks candidates using a multi-factor score (Delay 35%, Transit 25%, Cost 25%, Availability 15%), penalizes deadline risks, provides root-cause failure diagnostics when no alternative exists, and generates non-destructive proposals (`RecoveryPlan` status `PROPOSED`) without mutating bookings. |
+| **Recovery Approval & Execution (T14)** | ✅ Verified | CHC-manager-authorized retrieval (`GET /api/v1/recovery-plans/{id}`), atomic approval & execution (`POST /api/v1/recovery-plans/{id}/approve`), and rejection (`POST /api/v1/recovery-plans/{id}/reject`). Live re-validates machinery/attachment compatibility, operator availability, booking conflicts, travel radius, and deadlines. Reassigns bookings to `SCHEDULED`, updates availability slots to `BOOKED`/`ASSIGNED`, transitions breakdown to `RECOVERING`, rolls back atomically on conflict (409), prevents duplicate approval (400), enforces CHC tenant isolation (403), records immutable AuditLogs, and queues dispatch notifications for farmers and operators. |
 | **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
 
 ---
@@ -175,7 +176,8 @@ The project includes an operational backend verified through automated pytest te
 │   │       ├── bookings.py             # Operational booking lifecycle endpoints
 │   │       ├── scheduling.py           # Feasibility checking endpoints
 │   │       ├── schedules.py            # Schedule generation, review, approval & rejection
-│   │       └── breakdowns.py           # Breakdown reporting & impact analysis endpoints
+│   │       ├── breakdowns.py           # Breakdown reporting & impact analysis endpoints
+│   │       └── recovery_plans.py       # Recovery plan retrieval, approval & rejection endpoints
 │   ├── core/
 │   │   ├── config.py                   # Pydantic Settings & priority scoring weights
 │   │   └── security.py                 # Argon2id hashing & JWT token issuance
@@ -191,11 +193,12 @@ The project includes an operational backend verified through automated pytest te
 │   │   ├── recovery.py                 # Breakdowns, RecoveryPlans, Priorities
 │   │   └── supporting.py               # RefreshTokens, AuditLogs, Notifications
 │   ├── schemas/                        # Pydantic v2 schemas for all domains
-│   │   ├── recovery.py                 # Breakdown reporting and impact analysis models
+│   │   ├── recovery.py                 # Breakdown reporting and recovery execution models
 │   │   └── scheduling.py               # Feasibility and schedule proposal models
 │   └── services/
 │       ├── breakdown.py                # Breakdown reporting & customer priority scoring
-│       ├── recovery.py                 # Recovery alternative generation & multi-factor ranking
+│       ├── recovery.py                 # Recovery alternative ranking & transactional approval
+│       ├── notification.py             # Notification persistence & dispatch abstraction
 │       ├── feasibility.py              # Modular scheduling rules & travel estimation
 │       ├── scheduler.py                # Candidate schedule generation & approval engine
 │       └── schedule_store.py           # Thread-safe in-memory schedule proposal registry
@@ -209,7 +212,8 @@ The project includes an operational backend verified through automated pytest te
 │   ├── test_scheduling_feasibility.py  # 13 Feasibility checker & travel tests
 │   ├── test_scheduling_generation.py   # 8 Schedule generation & approval tests
 │   ├── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
-│   └── test_recovery_ranking.py        # 6 Recovery alternative & ranking tests
+│   ├── test_recovery_ranking.py        # 6 Recovery alternative & ranking tests
+│   └── test_recovery_execution.py      # 9 Recovery plan approval & execution tests
 ├── alembic/                            # Alembic database migrations
 ├── run.ps1                             # Automated PowerShell startup & test script
 ├── pyproject.toml                      # Project metadata & Python dependencies

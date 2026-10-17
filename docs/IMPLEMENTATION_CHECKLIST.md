@@ -264,11 +264,55 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T14: Recovery Approval & Execution
+- **Scope:**
+  - **Recovery Plan Management Endpoints ([app/api/v1/recovery_plans.py](file:///e:/PROJECTS/hackshift/app/api/v1/recovery_plans.py), [app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py)):**
+    - `GET /api/v1/recovery-plans/{plan_id}` — Retrieve proposed recovery plan and items.
+    - `POST /api/v1/recovery-plans/{plan_id}/approve` — Approve and execute a proposed recovery plan.
+    - `POST /api/v1/recovery-plans/{plan_id}/reject` — Reject a proposed recovery plan without modifying bookings or resources.
+    - Breakdown-nested routes: `GET /api/v1/breakdowns/{id}/recovery-plans/{plan_id}`, `POST .../approve`, `POST .../reject`.
+  - **Live Re-Validation Engine ([app/services/recovery.py](file:///e:/PROJECTS/hackshift/app/services/recovery.py)):**
+    - Re-evaluates all assignments against live machinery compatibility, operator availability/duty, active booking collisions, CHC operating radius, transit time, and farmer deadlines via `evaluate_feasibility`.
+    - Detects stale alternatives or concurrent resource locking prior to execution, raising HTTP 409 Conflict with detailed failure reasons and recording `AuditLog` for the failed attempt.
+  - **Atomic Transactional Execution:**
+    - Atomically updates affected bookings: sets `machine_id` to replacement machine, `operator_id` to replacement operator, `scheduled_date` to target date, and `status` to `SCHEDULED`.
+    - Updates/creates `MachineAvailability` slots to `BOOKED` and `OperatorAvailability` slots to `ASSIGNED`.
+    - Updates plan items to `COMPLETED`, plan status to `EXECUTED` (`approved_by_id = current_user.id`), and breakdown status to `RECOVERING`.
+    - Wrapped in explicit database transaction with complete rollback on any error, ensuring zero partial mutations.
+  - **Rejection Workflow:**
+    - Transitions plan to `REJECTED` and items to `FAILED`.
+    - Preserves existing bookings and resource calendars in their original state.
+    - Records immutable `AuditLog` capturing manager rejection rationale.
+  - **Duplicate Approval & Invalid State Guards:**
+    - Prevents executing already executed plans (HTTP 400).
+    - Prevents approving rejected plans or rejecting executed plans (HTTP 400).
+  - **Granular RBAC & Tenant Isolation:**
+    - Strictly authorized for `SUPERADMIN` and CHC managers (`require_roles("SUPERADMIN", "CHC_MANAGER")`).
+    - Enforces CHC tenant isolation via `verify_chc_manager_access`; managers from foreign CHCs receive HTTP 403 Forbidden.
+  - **Immutable Audit Logging ([app/models/supporting.py](file:///e:/PROJECTS/hackshift/app/models/supporting.py)):**
+    - Creates `AuditLog` records for `APPROVE_RECOVERY_PLAN`, `REJECT_RECOVERY_PLAN`, and `FAILED_RECOVERY_APPROVAL`.
+    - Stores structured JSON payloads of `payload_before` and `payload_after` with booking IDs, previous/new machine assignments, actor ID, and IP address.
+  - **Notification Service Abstraction ([app/services/notification.py](file:///e:/PROJECTS/hackshift/app/services/notification.py)):**
+    - Clean notification service abstraction using existing `Notification` model.
+    - Queues dispatch records (`status = "PENDING"`) for affected farmers and assigned replacement operators.
+    - Documented that external mobile SMS (Twilio), Push (FCM), and Email (SendGrid) gateways are pending live integration.
+  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):**
+    - `RecoveryPlanItemResponse`, `RecoveryPlanResponse`, `RecoveryPlanRejectRequest`, `RecoveryPlanExecutionResponse`.
+  - **Unit Test Suite ([tests/test_recovery_execution.py](file:///e:/PROJECTS/hackshift/tests/test_recovery_execution.py)):**
+    - 9 comprehensive tests covering plan retrieval, successful execution, duplicate approval rejection, rejection workflow, approving rejected plan rejection, live conflict rollback, stale cancelled booking, cross-CHC tenant isolation (403), and nested breakdown routes.
+- **Verification:**
+  - Targeted unit test suite (`pytest tests/test_recovery_execution.py -v`): **PASS** (9 passed in 10.42s).
+  - Full pytest suite (`pytest -v`): 94 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
+  - Ruff format check (`ruff format --check .`): **PASS** (67 files formatted).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T14:** Recovery Plan Approval, Execution & Mobile Dispatch Notification Scaffolding
+- [ ] **Task T15:** Next project milestone per roadmap
 
 
 

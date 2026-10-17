@@ -14,6 +14,7 @@ from app.api.v1.breakdowns import router as breakdowns_router
 from app.api.v1.chcs import router as chcs_router
 from app.api.v1.machines import router as machines_router
 from app.api.v1.operators import router as operators_router
+from app.api.v1.recovery_plans import router as recovery_plans_router
 from app.api.v1.schedules import router as schedules_router
 from app.api.v1.scheduling import router as scheduling_router
 from app.api.v1.service_requests import router as service_requests_router
@@ -69,6 +70,7 @@ app.include_router(bookings_router, prefix=settings.API_V1_STR)
 app.include_router(scheduling_router, prefix=settings.API_V1_STR)
 app.include_router(schedules_router, prefix=settings.API_V1_STR)
 app.include_router(breakdowns_router, prefix=settings.API_V1_STR)
+app.include_router(recovery_plans_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

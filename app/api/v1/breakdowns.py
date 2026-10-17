@@ -1,6 +1,6 @@
 """API endpoints for Machine Breakdown Reporting and Impact Analysis (T12)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -17,13 +17,21 @@ from app.schemas.recovery import (
     BreakdownPaginatedResponse,
     BreakdownRecoveryResponse,
     BreakdownResponse,
+    RecoveryPlanExecutionResponse,
+    RecoveryPlanRejectRequest,
+    RecoveryPlanResponse,
 )
 from app.services.breakdown import (
     get_breakdown_impact_analysis,
     list_breakdowns_for_user,
     report_breakdown_and_analyze,
 )
-from app.services.recovery import generate_breakdown_recovery_alternatives
+from app.services.recovery import (
+    approve_and_execute_recovery_plan,
+    generate_breakdown_recovery_alternatives,
+    get_recovery_plan,
+    reject_recovery_plan,
+)
 
 router = APIRouter(prefix="/breakdowns", tags=["Breakdown & Recovery Impact"])
 
@@ -192,4 +200,87 @@ def list_breakdowns(
         total=total,
         page=page,
         size=limit,
+    )
+
+
+@router.get(
+    "/{breakdown_id}/recovery-plans/{plan_id}",
+    response_model=RecoveryPlanResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve recovery plan details for a specific breakdown",
+)
+def get_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanResponse:
+    """Retrieve details and candidate items for a recovery plan under a breakdown incident."""
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return RecoveryPlanResponse.model_validate(plan)
+
+
+@router.post(
+    "/{breakdown_id}/recovery-plans/{plan_id}/approve",
+    response_model=RecoveryPlanExecutionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Approve and execute a proposed recovery plan for a breakdown",
+)
+def approve_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanExecutionResponse:
+    """Approve and atomically execute a proposed recovery plan under a breakdown incident."""
+    client_ip = request.client.host if request.client else None
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return approve_and_execute_recovery_plan(
+        db=db,
+        plan_id=plan_id,
+        current_user=current_user,
+        ip_address=client_ip,
+    )
+
+
+@router.post(
+    "/{breakdown_id}/recovery-plans/{plan_id}/reject",
+    response_model=RecoveryPlanExecutionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reject a proposed recovery plan for a breakdown",
+)
+def reject_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    request: Request,
+    payload: RecoveryPlanRejectRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanExecutionResponse:
+    """Reject a proposed recovery plan under a breakdown incident."""
+    client_ip = request.client.host if request.client else None
+    reason = payload.reason if payload else None
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return reject_recovery_plan(
+        db=db,
+        plan_id=plan_id,
+        current_user=current_user,
+        reason=reason,
+        ip_address=client_ip,
     )

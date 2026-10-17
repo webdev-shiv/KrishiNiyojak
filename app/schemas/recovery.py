@@ -211,3 +211,63 @@ class BreakdownRecoveryResponse(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RecoveryPlanItemResponse(BaseModel):
+    """Individual operational reassignment item inside a RecoveryPlan (T14)."""
+
+    id: int
+    recovery_plan_id: int
+    affected_booking_id: int
+    replacement_machine_id: int | None = None
+    replacement_operator_id: int | None = None
+    action_type: str
+    new_scheduled_date: date | None = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecoveryPlanResponse(BaseModel):
+    """Recovery plan proposed or executed to resolve a machine breakdown incident (T14)."""
+
+    id: int
+    breakdown_id: int
+    strategy: str
+    status: str
+    estimated_delay_hours: float
+    estimated_cost: Decimal
+    created_by_id: int
+    approved_by_id: int | None = None
+    created_at: datetime
+    updated_at: datetime
+    items: list[RecoveryPlanItemResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecoveryPlanRejectRequest(BaseModel):
+    """Optional reason payload when rejecting a recovery plan (T14)."""
+
+    reason: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Operational reason or justification for rejecting the proposed recovery plan",
+    )
+
+
+class RecoveryPlanExecutionResponse(BaseModel):
+    """Result of approving and executing, or rejecting, a proposed recovery plan (T14)."""
+
+    plan_id: int
+    breakdown_id: int
+    status: str
+    message: str
+    executed_items_count: int
+    audit_log_id: int | None = None
+    notifications_dispatched_count: int = 0
+    executed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

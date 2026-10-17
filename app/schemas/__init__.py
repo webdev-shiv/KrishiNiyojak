@@ -43,6 +43,10 @@ from app.schemas.recovery import (
     BreakdownRecoveryResponse,
     BreakdownResponse,
     RecoveryAlternativeResponse,
+    RecoveryPlanExecutionResponse,
+    RecoveryPlanItemResponse,
+    RecoveryPlanRejectRequest,
+    RecoveryPlanResponse,
 )
 from app.schemas.resource import (
     AttachmentCreate,
@@ -122,6 +126,10 @@ __all__ = [
     "OperatorResponse",
     "OperatorUpdate",
     "RecoveryAlternativeResponse",
+    "RecoveryPlanExecutionResponse",
+    "RecoveryPlanItemResponse",
+    "RecoveryPlanRejectRequest",
+    "RecoveryPlanResponse",
     "RefreshTokenRequest",
     "ScheduleGenerateRequest",
     "ScheduleRejectRequest",
