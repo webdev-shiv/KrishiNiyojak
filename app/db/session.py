@@ -9,7 +9,7 @@ from app.core.config import settings
 
 connect_args = {}
 if settings.DATABASE_URL.startswith("postgresql"):
-    connect_args["connect_timeout"] = 3
+    connect_args["connect_timeout"] = 10
 
 engine = create_engine(
     settings.DATABASE_URL,

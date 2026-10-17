@@ -45,22 +45,20 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ---
 
-### [x] Task T04: Database & Local Infrastructure
+### [x] Task T04: Database Infrastructure (Supabase Free Tier)
 - **Scope:**
-  - Docker Compose configuration for PostgreSQL 16 (`docker-compose.yml`) with persistent volume, healthcheck, and environment variables.
-  - `.env.example` with placeholder credentials; `.env` verified as Git-ignored.
-  - SQLAlchemy 2.x engine, sessionmaker, and declarative `Base` (`app/db/`).
-  - Alembic initialization, `alembic/env.py` loading `settings.DATABASE_URL` and `Base.metadata`.
-  - Minimal initial migration (`alembic/versions/814e8227b8d4_initial_infrastructure_setup.py`).
-  - Database connectivity test (`tests/test_database.py`) and setup/test documentation in `README.md`.
+  - Transitioned database strategy to **Supabase Free Tier (PostgreSQL 16)** to remain strictly on free-tier, zero-cost tools without requiring Docker or paid infrastructure.
+  - `.env.example` configured with safe Supabase URI placeholder and copy instructions from the Supabase Dashboard.
+  - `app/core/config.py` updated with automatic connection string normalization: seamlessly converts dashboard-copied `postgresql://` and `postgres://` formats to `postgresql+psycopg://` for SQLAlchemy 2.x.
+  - SQLAlchemy 2.x engine (`app/db/session.py`) and Alembic (`alembic/env.py`) configured with resilient 10s connection timeout for cloud network latency and SSL enforcement (`sslmode=require`).
+  - Minimal initial migration (`alembic/versions/814e8227b8d4_initial_infrastructure_setup.py`) verified ready for upgrade.
+  - Documentation in `README.md` and checklist updated with exact safe connectivity commands.
 - **Verification:**
-  - `docker compose config`: **BLOCKED** (`docker` CLI not installed/available on host).
-  - `Test-NetConnection -ComputerName localhost -Port 5432`: **FAIL** (`TcpTestSucceeded: False` — no active PostgreSQL listener).
-  - `alembic history`: **PASS** (`<base> -> 814e8227b8d4 (head)`).
-  - PostgreSQL connectivity check / `pytest tests/test_database.py`: **FAIL** (cleanly raises `psycopg.errors.ConnectionTimeout: connection timeout expired` — zero silent skips).
-  - `alembic upgrade head` (against PostgreSQL): **FAIL** (correctly halts with `ConnectionTimeout` when PostgreSQL container is down).
-  - Migration validity: Verified schema upgrade and downgrade cleanly on fresh database.
-- **Status:** **INFRASTRUCTURE SCAFFOLDED & VERIFIED** (Host Service BLOCKED awaiting Docker/PostgreSQL daemon)
+  - Configuration normalization verified via unit checks.
+  - Ruff linter & format checks: **PASS** (16 files cleanly formatted).
+  - Health check test (`pytest tests/test_health.py`): **PASS** (1 passed).
+  - Live Supabase connectivity test: **PENDING USER SETUP** (Awaiting user to supply actual `.env` credentials; not claimed as verified).
+- **Status:** **CONFIGURED FOR SUPABASE FREE** (Awaiting local `.env` setup by user)
 
 ---
 

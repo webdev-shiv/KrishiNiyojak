@@ -72,18 +72,27 @@ Machine-Day Composer is an agricultural machinery scheduling and breakdown-recov
 ### Prerequisites
 
 - Python 3.12 or newer
-- Docker & Docker Compose (for local PostgreSQL container)
+- Free PostgreSQL instance on [Supabase](https://supabase.com/) (or optional local Docker Compose)
 
 ### 1. Environment Setup
 
-Create and configure local environment variables:
+1. Copy the example environment configuration:
 
 ```bash
-# Copy example environment configuration
+# Windows (PowerShell)
+Copy-Item .env.example .env
+
+# Linux / macOS
 cp .env.example .env
 ```
 
-Create and activate a virtual environment:
+2. Open `.env` and set `DATABASE_URL` with your Supabase connection string:
+   - Navigate to **Supabase Dashboard -> Project Settings -> Database**.
+   - Under **Connection string**, select **URI**.
+   - Copy the URI (Session mode or Transaction pooler), replace `[YOUR-PASSWORD]` with your actual password, and paste it into `DATABASE_URL`.
+   - Both `postgresql://` and `postgresql+psycopg://` formats are automatically supported.
+
+3. Create and activate a virtual environment:
 
 ```bash
 # Windows (PowerShell)
@@ -103,38 +112,27 @@ Install the project along with development and database dependencies:
 pip install -e ".[dev]"
 ```
 
-### 3. Local Database Infrastructure (Docker Compose)
+### 3. Database Connectivity Verification
 
-Start the local PostgreSQL 16 container with persistent storage and healthchecks:
-
-```bash
-docker compose up -d
-```
-
-To verify database health:
+Once `.env` is configured with your Supabase credentials, verify the live connection safely:
 
 ```bash
-docker compose ps
-```
-
-To stop the database service:
-
-```bash
-docker compose down
+# Safe live connectivity check
+pytest tests/test_database.py
 ```
 
 ### 4. Database Migrations (Alembic)
 
-Apply all database schema migrations to the latest revision (`head`):
+Apply database schema migrations to the latest revision (`head`):
 
 ```bash
 alembic upgrade head
 ```
 
-To rollback the most recent migration:
+To view migration history:
 
 ```bash
-alembic downgrade -1
+alembic history
 ```
 
 ### 5. Running the Development Server
@@ -154,10 +152,10 @@ The application will be accessible at:
 Run the pytest test suite:
 
 ```bash
-# Run all tests (requires active database container for connectivity verification)
+# Run all tests (requires active DATABASE_URL in .env)
 pytest
 
-# Run health check unit tests only
+# Run health check unit tests only (independent of database)
 pytest tests/test_health.py
 ```
 
@@ -166,4 +164,5 @@ Run code formatting and linting checks with Ruff:
 ```bash
 ruff check .
 ```
+
 

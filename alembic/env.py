@@ -41,7 +41,7 @@ def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     connect_args = {}
     if settings.DATABASE_URL.startswith("postgresql"):
-        connect_args["connect_timeout"] = 3
+        connect_args["connect_timeout"] = 10
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
