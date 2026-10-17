@@ -103,3 +103,63 @@ def require_roles(*allowed_roles: str) -> Callable[[User], User]:
         )
 
     return role_checker
+
+
+def verify_chc_manager_access(current_user: User, chc_id: int) -> None:
+    """Ensure current user is an active manager of the specified CHC, or superadmin."""
+    # Check if SUPERADMIN
+    for ur in current_user.user_roles:
+        if ur.role and ur.role.name.upper() == "SUPERADMIN":
+            return
+
+    # Check CHC membership with role MANAGER
+    for membership in current_user.chc_memberships:
+        if (
+            membership.is_active
+            and membership.chc_id == chc_id
+            and membership.role.upper() == "MANAGER"
+        ):
+            return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Access denied: You are not authorized to manage CHC {chc_id}",
+    )
+
+
+def verify_resource_management_access(
+    current_user: User, chc_id: int, owner_id: int | None, db: Session
+) -> None:
+    """Ensure current user can manage a resource belonging to a CHC or resource owner."""
+    # Check if SUPERADMIN
+    for ur in current_user.user_roles:
+        if ur.role and ur.role.name.upper() == "SUPERADMIN":
+            return
+
+    # Check if active manager of this CHC
+    for membership in current_user.chc_memberships:
+        if (
+            membership.is_active
+            and membership.chc_id == chc_id
+            and membership.role.upper() == "MANAGER"
+        ):
+            return
+
+    # Check if resource owner
+    from app.models.resource import ResourceOwner
+
+    user_roles = {ur.role.name.upper() for ur in current_user.user_roles if ur.role}
+    if "RESOURCE_OWNER" in user_roles and owner_id is not None:
+        owner = db.execute(
+            select(ResourceOwner).where(ResourceOwner.id == owner_id)
+        ).scalar_one_or_none()
+        if owner and (
+            owner.email == current_user.email
+            or (owner.contact_phone and owner.contact_phone == current_user.phone_number)
+        ):
+            return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied: You do not have permission to manage this resource",
+    )

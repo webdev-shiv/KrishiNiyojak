@@ -26,6 +26,10 @@ def test_docs_and_openapi_registered() -> None:
     assert "/health" in schema["paths"]
     assert "/api/v1/auth/register" in schema["paths"]
     assert "/api/v1/auth/login" in schema["paths"]
+    assert "/api/v1/chcs" in schema["paths"]
+    assert "/api/v1/machines" in schema["paths"]
+    assert "/api/v1/operators" in schema["paths"]
+    assert "/api/v1/attachments" in schema["paths"]
 
 
 def test_unreachable_database_returns_503() -> None:

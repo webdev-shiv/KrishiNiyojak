@@ -117,13 +117,30 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Alembic migration discovery (`alembic history`): **PASS** (`814e8227b8d4 -> 6df59861962b (head)`).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T07: Core Resource Management APIs
+- **Scope:**
+  - **CHC APIs ([app/api/v1/chcs.py](file:///e:/PROJECTS/hackshift/app/api/v1/chcs.py)):** Create, list (paginated, status filter), view, and update Custom Hiring Centre hubs. Manager auto-membership on creation.
+  - **Machine APIs ([app/api/v1/machines.py](file:///e:/PROJECTS/hackshift/app/api/v1/machines.py)):** Register, list (paginated, CHC/category/status filters), view, update, and deactivate/retire machinery assets. Unique registration number constraint enforcement.
+  - **Operator APIs ([app/api/v1/operators.py](file:///e:/PROJECTS/hackshift/app/api/v1/operators.py)):** Register, list, view, update, and deactivate certified operators. Automatic `OPERATOR` CHC membership association.
+  - **Attachment APIs ([app/api/v1/attachments.py](file:///e:/PROJECTS/hackshift/app/api/v1/attachments.py)):** Create, list, view, update, and deactivate implements/attachments. Unique code constraint enforcement.
+  - **Granular RBAC & Cross-CHC Isolation ([app/api/deps.py](file:///e:/PROJECTS/hackshift/app/api/deps.py)):** CHC Managers are strictly restricted to managing resources of their assigned CHC (`verify_chc_manager_access`). Resource owners can only manage their permitted assets (`verify_resource_management_access`). Unauthorized cross-CHC or cross-owner access is rejected with HTTP 403 Forbidden. Farmers are denied management access.
+  - **Pydantic Validation ([app/schemas/chc.py](file:///e:/PROJECTS/hackshift/app/schemas/chc.py), [app/schemas/resource.py](file:///e:/PROJECTS/hackshift/app/schemas/resource.py)):** Type checks, GPS coordinate validation, positive horsepower/rate validation, and paginated response models.
+  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI schema verified.
+  - **Unit Test Suite ([tests/test_resources.py](file:///e:/PROJECTS/hackshift/tests/test_resources.py)):** 14 tests covering all CRUD paths, cross-CHC manager rejection, duplicate constraints, and Pydantic validation errors.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py -v`): **PASS** (34 passed in 5.69s).
+  - Full pytest suite (`pytest -v`): 35 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
+  - API documentation (`/docs`, `/redoc`): Verified operational and reflecting all new resource paths.
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T07:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T08:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T09:** REST API Router Layer & Documentation
-- [ ] **Task T10:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T08:** Core Scheduling Engine & Capacity Planning
+- [ ] **Task T09:** Breakdown Recovery & Dynamic Reallocation Workflows
+- [ ] **Task T10:** REST API Router Layer & Documentation
+- [ ] **Task T11:** React Native / Expo Mobile Client Scaffolding
 
 
