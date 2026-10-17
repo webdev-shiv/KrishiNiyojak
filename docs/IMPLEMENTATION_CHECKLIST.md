@@ -149,13 +149,29 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T09: Booking Lifecycle
+- **Scope:**
+  - **Booking Creation ([app/api/v1/bookings.py](file:///e:/PROJECTS/hackshift/app/api/v1/bookings.py)):** Endpoint (`POST /api/v1/bookings`) to create operational bookings from approved service requests. Enforces service request existence, `APPROVED` status, single active booking constraint (preventing duplicate bookings), CHC resource alignment (verifying that machines and operators belong to the request's CHC), and date window compliance.
+  - **Booking Management & Retrieval:** Endpoints for role-scoped listing (`GET`), detailed retrieval (`GET /{id}`), and modification (`PUT /{id}`). Farmers are restricted to their own requests; operators access only assigned bookings; CHC Managers access bookings for their authorized hubs.
+  - **Status Transition State Machine:** Enforces valid lifecycle state transitions across `PENDING`, `SCHEDULED`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, and `DISRUPTED`. Rejects invalid transitions or transitions from terminal states (`COMPLETED`, `CANCELLED`) with HTTP 400 Bad Request.
+  - **Cancellation Lifecycle:** Dedicated cancellation endpoint (`POST /{id}/cancel`) supporting optional cancellation reasons. Enforces farmer and manager permissions and blocks cancellation of completed bookings.
+  - **Pydantic Schemas ([app/schemas/booking.py](file:///e:/PROJECTS/hackshift/app/schemas/booking.py)):** Models for creation, updates, cancellation, paginated listing, and detailed representation including implement attachments.
+  - **Router Integration:** Mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI documentation confirmed operational.
+  - **Unit Test Suite ([tests/test_bookings.py](file:///e:/PROJECTS/hackshift/tests/test_bookings.py)):** 8 comprehensive tests verifying successful booking creation, unapproved request rejection, duplicate booking prevention, date window checks, valid and terminal status transitions, cancellation lifecycle, cross-farmer isolation, and denial of direct farmer booking creation.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py -v`): **PASS** (50 passed in 11.75s).
+  - Full pytest suite (`pytest -v`): 51 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T09:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T10:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T11:** REST API Router Layer & Documentation
-- [ ] **Task T12:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T10:** Core Scheduling Engine & Capacity Planning
+- [ ] **Task T11:** Breakdown Recovery & Dynamic Reallocation Workflows
+- [ ] **Task T12:** REST API Router Layer & Documentation
+- [ ] **Task T13:** React Native / Expo Mobile Client Scaffolding
 
 

@@ -9,6 +9,7 @@ from app.api.deps import require_roles
 from app.api.v1.attachments import router as attachments_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.availability import router as availability_router
+from app.api.v1.bookings import router as bookings_router
 from app.api.v1.chcs import router as chcs_router
 from app.api.v1.machines import router as machines_router
 from app.api.v1.operators import router as operators_router
@@ -61,6 +62,7 @@ app.include_router(operators_router, prefix=settings.API_V1_STR)
 app.include_router(attachments_router, prefix=settings.API_V1_STR)
 app.include_router(service_requests_router, prefix=settings.API_V1_STR)
 app.include_router(availability_router, prefix=settings.API_V1_STR)
+app.include_router(bookings_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

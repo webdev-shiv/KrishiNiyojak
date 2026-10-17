@@ -19,6 +19,13 @@ from app.schemas.availability import (
     OperatorAvailabilityResponse,
     OperatorAvailabilityUpdate,
 )
+from app.schemas.booking import (
+    BookingCancelRequest,
+    BookingCreate,
+    BookingPaginatedResponse,
+    BookingResponse,
+    BookingUpdate,
+)
 from app.schemas.chc import (
     CHCCreate,
     CHCMembershipCreate,
@@ -53,6 +60,11 @@ __all__ = [
     "AttachmentPaginatedResponse",
     "AttachmentResponse",
     "AttachmentUpdate",
+    "BookingCancelRequest",
+    "BookingCreate",
+    "BookingPaginatedResponse",
+    "BookingResponse",
+    "BookingUpdate",
     "CHCCreate",
     "CHCMembershipCreate",
     "CHCMembershipResponse",

@@ -33,6 +33,7 @@ def test_docs_and_openapi_registered() -> None:
     assert "/api/v1/service-requests" in schema["paths"]
     assert "/api/v1/machine-availability" in schema["paths"]
     assert "/api/v1/operator-availability" in schema["paths"]
+    assert "/api/v1/bookings" in schema["paths"]
 
 
 def test_unreachable_database_returns_503() -> None:
