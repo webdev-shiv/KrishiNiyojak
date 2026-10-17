@@ -35,12 +35,74 @@ Machine-Day Composer is an agricultural machinery scheduling and breakdown-recov
 ```
 .
 ├── .gitignore
+├── pyproject.toml
 ├── README.md
-└── docs/              # Architecture and implementation documentation
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   └── core/
+│       ├── __init__.py
+│       └── config.py
+├── docs/
+│   ├── README.md
+│   └── IMPLEMENTATION_CHECKLIST.md
+└── tests/
+    ├── __init__.py
+    └── test_health.py
 ```
 
 ---
 
 ## Getting Started
 
-> This project is currently in early scaffolding. Application setup instructions and environment configurations will be published as development proceeds.
+### Prerequisites
+
+- Python 3.12 or newer
+
+### 1. Environment Setup
+
+Create and activate a virtual environment:
+
+```bash
+# Windows (PowerShell)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Linux / macOS
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 2. Dependency Installation
+
+Install the project along with development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+### 3. Running the Development Server
+
+Start the local FastAPI development server with Uvicorn:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The application will be accessible at:
+- API Root / Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- Health Check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+
+### 4. Running Tests & Quality Checks
+
+Run the pytest test suite:
+
+```bash
+pytest
+```
+
+Run code formatting and linting checks with Ruff:
+
+```bash
+ruff check .
+```
