@@ -102,6 +102,21 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Security review: Zero hardcoded secrets; credentials read from environment variables; passwords hashed with Argon2id; refresh tokens stored as hashes.
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] One-Command Run Setup (Windows PowerShell)
+- **Scope:**
+  - Automated root-level PowerShell startup script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) verifying Python 3.12+, configuring `.venv`, installing dependencies on demand without redundant reinstallations, ensuring safe `.env` creation from template without overwriting existing configs, and launching Uvicorn.
+  - Added `-CheckOnly` switch parameter for non-blocking pre-flight checks and automated validation.
+  - Hardened backend startup in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py) with global exception handlers for `sqlalchemy.exc.OperationalError` and `psycopg.OperationalError` returning a clean HTTP 503 Service Unavailable when the database is offline, preventing unhandled crashes or false success claims.
+  - Verified independent execution of `/health`, `/docs`, and `/redoc` without requiring an active live database.
+  - Enhanced [.env.example](file:///e:/PROJECTS/hackshift/.env.example) and [README.md](file:///e:/PROJECTS/hackshift/README.md) clearly distinguishing required database configurations from optional startup defaults.
+- **Verification:**
+  - `.\run.ps1 -CheckOnly`: **PASS** (Detected Python 3.14, verified `.venv`, verified dependencies, detected `.env`, validated application imports).
+  - Pytest independent suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py -v`): **PASS** (20 passed in 3.65s).
+  - Full pytest suite (`pytest -v`): 21 passed, 1 expected failure (`test_database_connectivity` fails clearly due to unconfigured live Supabase database, as designed).
+  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
+  - Alembic migration discovery (`alembic history`): **PASS** (`814e8227b8d4 -> 6df59861962b (head)`).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)

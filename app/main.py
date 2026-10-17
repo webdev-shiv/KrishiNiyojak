@@ -1,6 +1,9 @@
 """FastAPI main application entrypoint."""
 
-from fastapi import Depends, FastAPI
+import psycopg
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app.api.deps import require_roles
 from app.api.v1.auth import router as auth_router
@@ -12,6 +15,37 @@ app = FastAPI(
     version=settings.VERSION,
     description="Agricultural machinery scheduling and breakdown-recovery platform for CHCs",
 )
+
+
+@app.exception_handler(OperationalError)
+async def db_operational_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
+    """Handle SQLAlchemy database connectivity failures gracefully."""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": (
+                "Database connection failed. "
+                "Please ensure PostgreSQL is reachable and DATABASE_URL is configured in .env."
+            )
+        },
+    )
+
+
+@app.exception_handler(psycopg.OperationalError)
+async def psycopg_operational_error_handler(
+    request: Request, exc: psycopg.OperationalError
+) -> JSONResponse:
+    """Handle direct psycopg connection failures gracefully."""
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": (
+                "Database connection failed. "
+                "Please ensure PostgreSQL is reachable and DATABASE_URL is configured in .env."
+            )
+        },
+    )
+
 
 # Mount authentication router
 app.include_router(auth_router, prefix=settings.API_V1_STR)

@@ -74,11 +74,37 @@ Machine-Day Composer is an agricultural machinery scheduling and breakdown-recov
 - Python 3.12 or newer
 - Free PostgreSQL instance on [Supabase](https://supabase.com/) (or optional local Docker Compose)
 
-### 1. Environment Setup
+---
 
-1. Copy the example environment configuration:
+### One-Command Startup (Windows PowerShell)
 
-```bash
+From the project root, simply run:
+
+```powershell
+.\run.ps1
+```
+
+The `run.ps1` script automatically:
+1. Detects system Python (verifying version >= 3.12).
+2. Creates the `.venv` virtual environment if not present.
+3. Installs or verifies all required project and developer dependencies without redundant reinstalls.
+4. Checks `.env` configuration, generating a fresh template from `.env.example` if missing without overwriting existing files.
+5. Launches the FastAPI development server with hot-reloading at **[http://127.0.0.1:8000](http://127.0.0.1:8000)**.
+
+To run verification without starting the server:
+```powershell
+.\run.ps1 -CheckOnly
+```
+
+---
+
+### Manual Setup & Configuration
+
+#### 1. Configuration & `.env` Setup
+
+Copy the example environment configuration:
+
+```powershell
 # Windows (PowerShell)
 Copy-Item .env.example .env
 
@@ -86,83 +112,58 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-2. Open `.env` and set `DATABASE_URL` with your Supabase connection string:
-   - Navigate to **Supabase Dashboard -> Project Settings -> Database**.
-   - Under **Connection string**, select **URI**.
-   - Copy the URI (Session mode or Transaction pooler), replace `[YOUR-PASSWORD]` with your actual password, and paste it into `DATABASE_URL`.
-   - Both `postgresql://` and `postgresql+psycopg://` formats are automatically supported.
+**Configuration Reference:**
+- **Required for Database-Backed Features:** `DATABASE_URL` must point to your PostgreSQL / Supabase instance.
+  - In your Supabase Dashboard: **Project Settings -> Database -> Connection string (URI)**.
+  - Choose Transaction Pooler (port 6543) or Session Mode (port 5432).
+  - Both `postgresql://` and `postgresql+psycopg://` formats are automatically normalized.
+- **Optional for Startup & Health Checks:** `PROJECT_NAME`, `VERSION`, `API_V1_STR`, `ENVIRONMENT`, and `JWT_SECRET_KEY` use safe development defaults. Basic server startup, `/health`, and Swagger UI run without a live database.
 
-3. Create and activate a virtual environment:
+#### 2. Virtual Environment & Dependencies
 
-```bash
+```powershell
 # Windows (PowerShell)
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# Linux / macOS
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 2. Dependency Installation
-
-Install the project along with development and database dependencies:
-
-```bash
+# Install project and development dependencies
 pip install -e ".[dev]"
 ```
 
-### 3. Database Connectivity Verification
+#### 3. Running the Development Server Manually
 
-Once `.env` is configured with your Supabase credentials, verify the live connection safely:
-
-```bash
-# Safe live connectivity check
-pytest tests/test_database.py
+```powershell
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 4. Database Migrations (Alembic)
+Interactive documentation is available at:
+- **Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Health Check:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-Apply database schema migrations to the latest revision (`head`):
+#### 4. Running Tests & Quality Checks
 
-```bash
-alembic upgrade head
-```
+```powershell
+# Run independent unit tests (health, Swagger docs, domain models, and auth fixtures)
+pytest tests/test_auth.py tests/test_models.py tests/test_health.py -v
 
-To view migration history:
+# Run full pytest suite (includes live database connectivity check)
+pytest -v
 
-```bash
-alembic history
-```
-
-### 5. Running the Development Server
-
-Start the local FastAPI development server with Uvicorn:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The application will be accessible at:
-- API Root / Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- Health Check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-
-### 6. Running Tests & Quality Checks
-
-Run the pytest test suite:
-
-```bash
-# Run all tests (requires active DATABASE_URL in .env)
-pytest
-
-# Run health check unit tests only (independent of database)
-pytest tests/test_health.py
-```
-
-Run code formatting and linting checks with Ruff:
-
-```bash
+# Run code formatting and linting checks with Ruff
 ruff check .
+```
+
+#### 5. Database Migrations (Alembic)
+
+Once `.env` is configured with valid Supabase credentials:
+
+```powershell
+# Inspect migration history
+alembic history
+
+# Apply migrations to head
+alembic upgrade head
 ```
 
 
