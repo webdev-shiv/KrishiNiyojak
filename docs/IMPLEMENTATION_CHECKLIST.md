@@ -188,11 +188,34 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T11: Schedule Generation & Manager Approval
+- **Scope:**
+  - **Schedule Generation Engine ([app/services/scheduler.py](file:///e:/PROJECTS/hackshift/app/services/scheduler.py)):** Automated scheduler matching eligible approved service requests and pending bookings to available CHC machinery, certified operators, and agricultural implements using the T10 Feasibility Checker. Employs Earliest Deadline First (EDF) prioritization.
+  - **Intra-Schedule Collision Tracking:** Tracks tentative machine and operator assignments across dates and slots within a candidate plan, preventing double-allocation within the same schedule.
+  - **Infeasible Demand Reporting:** Gathers and reports distinct blocking reasons in `unscheduled_jobs` (such as horsepower deficits, deadline breaches, or leave conflicts) without silently bypassing constraints.
+  - **Non-Destructive Candidate Proposals ([app/services/schedule_store.py](file:///e:/PROJECTS/hackshift/app/services/schedule_store.py)):** Generates `PROPOSED` schedules in a thread-safe registry with zero mutations to confirmed bookings or database state before manager sign-off.
+  - **Transactional Approval & Live Conflict Re-checking:** Re-verifies all candidate slots against live database availability during approval to detect concurrent booking conflicts (HTTP 409 Conflict). Atomically transitions operational bookings to `SCHEDULED`, updates/creates `MachineAvailability` and `OperatorAvailability` slots, records immutable `AuditLog` entries, and prevents duplicate approval or approval of rejected schedules (HTTP 400).
+  - **Rejection Lifecycle:** Allows managers to reject proposed schedules with optional reasons, recording audit trails while leaving all operational bookings untouched.
+  - **CHC Manager Endpoints ([app/api/v1/schedules.py](file:///e:/PROJECTS/hackshift/app/api/v1/schedules.py)):**
+    - `POST /api/v1/schedules/generate` — Generate candidate machine-day schedule.
+    - `GET /api/v1/schedules` — List candidate and approved schedules for a CHC.
+    - `GET /api/v1/schedules/{schedule_id}` — Review candidate schedule details and feasibility metrics.
+    - `POST /api/v1/schedules/{schedule_id}/approve` — Transactionally commit approved schedule assignments.
+    - `POST /api/v1/schedules/{schedule_id}/reject` — Reject candidate schedule without modifying bookings.
+  - **Granular RBAC & Tenant Isolation:** Exclusively accessible to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the specific CHC hub. Farmers and unauthorized managers receive HTTP 403 Forbidden.
+  - **Pydantic Schemas ([app/schemas/scheduling.py](file:///e:/PROJECTS/hackshift/app/schemas/scheduling.py)):** `CandidateAssignmentResponse`, `UnscheduledJobResponse`, `ScheduleGenerateRequest`, `ScheduleRejectRequest`, `ScheduleResponse`, `ScheduleSummaryResponse`.
+  - **Unit Test Suite ([tests/test_scheduling_generation.py](file:///e:/PROJECTS/hackshift/tests/test_scheduling_generation.py)):** 8 comprehensive tests covering automated generation, infeasible job reasons, existing booking avoidance, transactional approval, duplicate approval prevention, rejection workflow, concurrent conflict detection (409), and RBAC/cross-CHC isolation.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py -v`): **PASS** (71 passed in 13.66s).
+  - Full pytest suite (`pytest -v`): 72 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter & format check (`ruff check .` & `ruff format --check .`): **PASS** (0 errors, 58 files formatted).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T11:** Dynamic Scheduling Generation & Machine-Day Allocation Engine
 - [ ] **Task T12:** Breakdown Recovery & Dynamic Reallocation Workflows
 - [ ] **Task T13:** REST API Router Layer & Documentation
 - [ ] **Task T14:** React Native / Expo Mobile Client Scaffolding

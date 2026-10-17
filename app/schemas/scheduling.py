@@ -1,6 +1,7 @@
-"""Pydantic schemas for Scheduling Rules and Feasibility evaluation (T10)."""
+"""Pydantic schemas for Feasibility checking (T10) and Schedule Generation (T11)."""
 
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -126,5 +127,111 @@ class FeasibilityResponse(BaseModel):
         default_factory=FeasibilityConstraintDetails,
         description="Detailed constraint metrics and evaluated thresholds",
     )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==============================================================================
+# T11: Schedule Generation & Management Schemas
+# ==============================================================================
+
+
+class CandidateAssignmentResponse(BaseModel):
+    """Proposed assignment for a specific service request or booking within a schedule."""
+
+    service_request_id: int
+    booking_id: int | None = Field(
+        None, description="Existing booking ID if schedule was generated from a pending booking"
+    )
+    machine_id: int
+    machine_model: str
+    operator_id: int
+    operator_name: str
+    attachment_ids: list[int] = Field(default_factory=list)
+    scheduled_date: date
+    scheduled_slot: str
+    estimated_cost: Decimal | None = None
+    feasible: bool = True
+    warnings: list[str] = Field(default_factory=list)
+    constraints: FeasibilityConstraintDetails = Field(default_factory=FeasibilityConstraintDetails)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UnscheduledJobResponse(BaseModel):
+    """Service request or booking that could not be feasibly scheduled."""
+
+    service_request_id: int
+    booking_id: int | None = None
+    farmer_id: int | None = None
+    acreage: float | None = None
+    operation_type: str | None = None
+    reasons: list[str] = Field(
+        default_factory=list,
+        description="Detailed blocking reasons explaining why the job could not be scheduled",
+    )
+    attempted_evaluations: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleGenerateRequest(BaseModel):
+    """Payload to generate candidate schedule for a CHC."""
+
+    chc_id: int = Field(..., description="Target Custom Hiring Centre ID")
+    start_date: date | None = Field(
+        None, description="Optional start of scheduling window (defaults to earliest demand date)"
+    )
+    end_date: date | None = Field(
+        None, description="Optional end of scheduling window (defaults to latest deadline)"
+    )
+    service_request_ids: list[int] | None = Field(
+        None, description="Optional list of specific approved service request IDs to schedule"
+    )
+    booking_ids: list[int] | None = Field(
+        None, description="Optional list of specific pending booking IDs to schedule"
+    )
+
+
+class ScheduleRejectRequest(BaseModel):
+    """Payload to reject a proposed candidate schedule."""
+
+    reason: str | None = Field(
+        None, max_length=255, description="Manager rationale for rejecting the schedule"
+    )
+
+
+class ScheduleResponse(BaseModel):
+    """Comprehensive representation of a candidate or approved schedule."""
+
+    id: str = Field(..., description="Unique schedule identifier (UUID)")
+    chc_id: int = Field(..., description="Managing CHC ID")
+    status: Literal["PROPOSED", "APPROVED", "REJECTED"] = Field(
+        ..., description="Schedule lifecycle state"
+    )
+    created_at: datetime
+    created_by_id: int
+    approved_at: datetime | None = None
+    approved_by_id: int | None = None
+    rejection_reason: str | None = None
+    candidate_assignments: list[CandidateAssignmentResponse] = Field(default_factory=list)
+    unscheduled_jobs: list[UnscheduledJobResponse] = Field(default_factory=list)
+    total_scheduled: int = 0
+    total_unscheduled: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScheduleSummaryResponse(BaseModel):
+    """Lightweight summary of a generated schedule."""
+
+    id: str
+    chc_id: int
+    status: str
+    created_at: datetime
+    created_by_id: int
+    approved_at: datetime | None = None
+    total_scheduled: int
+    total_unscheduled: int
 
     model_config = ConfigDict(from_attributes=True)

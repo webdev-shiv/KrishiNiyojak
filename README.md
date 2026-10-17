@@ -12,11 +12,11 @@
 
   <p align="center">
     <a href="#-operational-flowcharts"><img src="https://img.shields.io/badge/Architecture-Flowcharts-blue?style=flat-square" alt="Flowcharts" /></a>
-    <a href="#-working-features--capabilities"><img src="https://img.shields.io/badge/Working_Features-T01--T10_Verified-emerald?style=flat-square" alt="Features" /></a>
+    <a href="#-working-features--capabilities"><img src="https://img.shields.io/badge/Working_Features-T01--T11_Verified-emerald?style=flat-square" alt="Features" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi" alt="FastAPI" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/SQLAlchemy-2.0+-red?style=flat-square&logo=sqlalchemy" alt="SQLAlchemy" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
-    <a href="#-getting-started"><img src="https://img.shields.io/badge/Tests-63_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
+    <a href="#-getting-started"><img src="https://img.shields.io/badge/Tests-71_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
   </p>
 </div>
 
@@ -132,7 +132,7 @@ stateDiagram-v2
 
 ---
 
-## 🚀 Working Features & Capabilities (Verified T01–T10)
+## 🚀 Working Features & Capabilities (Verified T01–T11)
 
 The project includes an operational backend verified through automated pytest test suites and isolated database fixtures:
 
@@ -143,6 +143,7 @@ The project includes an operational backend verified through automated pytest te
 | **Availability & Demand (T08)** | ✅ Verified | Farmer Service Request intake (GPS coordinates, crop type, acreage, requested date windows). Calendar slot tracking for machines and operators across `FULL_DAY`, `HALF_DAY_MORNING`, and `HALF_DAY_AFTERNOON` with conflict rejection. |
 | **Booking Lifecycle (T09)** | ✅ Verified | Conversion of approved requests into machine-day agreements, unique booking codes, conflict validation, role-scoped queries, cancellation workflows, and state-machine transitions. |
 | **Scheduling Feasibility (T10)** | ✅ Verified | Modular business engine evaluating compatibility without database side-effects (`POST /api/v1/scheduling/feasibility` & `GET /api/v1/scheduling/feasibility/{booking_id}`). Checks HP thresholds, availability slots, booking collisions, Haversine travel distance, road transit time, and operational radius limits. |
+| **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review (`GET /api/v1/schedules/{id}`), list (`GET /api/v1/schedules?chc_id=...`), non-destructive rejection (`POST /api/v1/schedules/{id}/reject`), and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
 | **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
 
 ---
@@ -170,7 +171,8 @@ The project includes an operational backend verified through automated pytest te
 │   │       ├── service_requests.py     # Farmer demand intake endpoints
 │   │       ├── availability.py         # Machine & operator calendar slots
 │   │       ├── bookings.py             # Operational booking lifecycle endpoints
-│   │       └── scheduling.py           # Feasibility checking endpoints
+│   │       ├── scheduling.py           # Feasibility checking endpoints
+│   │       └── schedules.py            # Schedule generation, review, approval & rejection
 │   ├── core/
 │   │   ├── config.py                   # Pydantic Settings & travel model parameters
 │   │   └── security.py                 # Argon2id hashing & JWT token issuance
@@ -186,9 +188,11 @@ The project includes an operational backend verified through automated pytest te
 │   │   ├── recovery.py                 # Breakdowns, RecoveryPlans, Priorities
 │   │   └── supporting.py               # RefreshTokens, AuditLogs, Notifications
 │   ├── schemas/                        # Pydantic v2 schemas for all domains
-│   │   └── scheduling.py               # Feasibility request, response, and constraint models
+│   │   └── scheduling.py               # Feasibility and schedule proposal models
 │   └── services/
-│       └── feasibility.py              # Modular scheduling rules & travel estimation
+│       ├── feasibility.py              # Modular scheduling rules & travel estimation
+│       ├── scheduler.py                # Candidate schedule generation & approval engine
+│       └── schedule_store.py           # Thread-safe in-memory schedule proposal registry
 ├── tests/
 │   ├── test_auth.py                    # 12 Authentication & RBAC unit tests
 │   ├── test_models.py                  # 5 Schema, metadata & relationship tests
@@ -196,7 +200,8 @@ The project includes an operational backend verified through automated pytest te
 │   ├── test_resources.py               # 14 CHC, machine, operator & attachment tests
 │   ├── test_service_requests_and_availability.py # 8 Demand intake & slot tests
 │   ├── test_bookings.py                # 8 Booking state machine & lifecycle tests
-│   └── test_scheduling_feasibility.py  # 13 Scheduling engine & feasibility tests
+│   ├── test_scheduling_feasibility.py  # 13 Feasibility checker & travel tests
+│   └── test_scheduling_generation.py   # 8 Schedule generation & approval tests
 ├── alembic/                            # Alembic database migrations
 ├── run.ps1                             # Automated PowerShell startup & test script
 ├── pyproject.toml                      # Project metadata & Python dependencies
@@ -246,8 +251,8 @@ Once the application is running, open:
 Execute the automated test suite:
 
 ```powershell
-# Run all independent unit tests (63 tests)
-pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py -v
+# Run all independent unit tests (71 tests)
+pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py -v
 
 # Run code style & lint checks with Ruff
 ruff check .
