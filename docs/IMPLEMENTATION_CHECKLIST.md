@@ -62,12 +62,36 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ---
 
+### [x] Task T05: Domain Entities & Initial Migrations
+- **Scope:**
+  - Implemented 21 SQLAlchemy 2.x declarative models across 7 domain modules:
+    - **Identity:** `users`, `roles`, `user_roles`
+    - **CHCs:** `chcs`, `chc_memberships`
+    - **Resources:** `resource_owners`, `machines`, `operators`, `attachments`
+    - **Bookings:** `service_requests`, `bookings`, `booking_attachments`
+    - **Availability:** `machine_availability`, `operator_availability`
+    - **Recovery:** `machine_breakdowns`, `recovery_plans`, `recovery_plan_items`, `booking_priority`
+    - **Supporting:** `notifications`, `refresh_tokens`, `audit_logs`
+  - Explicit foreign keys, cascade deletes, composite unique constraints, indexes, UTC timestamps (`DateTime(timezone=True)`), and numeric money fields (`Numeric(10, 2)`).
+  - Registered all models with `Base.metadata` in `app/models/__init__.py` and configured Alembic detection in `alembic/env.py`.
+  - Created Alembic migration `6df59861962b_create_domain_models.py` chained to `814e8227b8d4`.
+  - Created test suite `tests/test_models.py` verifying model imports, metadata registration of all 21 tables, mapper relationships, and migration script structure.
+- **Verification:**
+  - `Base.metadata.tables` verification: **PASS** (all 21 tables registered).
+  - `alembic history`: **PASS** (`814e8227b8d4 -> 6df59861962b (head)`).
+  - Pytest suite (`pytest tests/test_models.py tests/test_health.py`): **PASS** (6 passed in 1.57s).
+  - Ruff linter & format check: **PASS** (all checks passed, 26 files formatted).
+  - Live PostgreSQL database migration: **PENDING USER SETUP** (Not claimed as applied; awaits user `.env` database connection).
+- **Status:** **PASS** (Models & Migration Verified; Live DB execution pending user `.env`)
+
+---
+
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T05:** Domain Entities & Initial Migrations
 - [ ] **Task T06:** Core Scheduling Engine & Capacity Planning
 - [ ] **Task T07:** Breakdown Recovery & Dynamic Reallocation Workflows
 - [ ] **Task T08:** Authentication, Security & Role-Based Access Control
 - [ ] **Task T09:** REST API Router Layer & Documentation
 - [ ] **Task T10:** React Native / Expo Mobile Client Scaffolding
+
 
