@@ -48,6 +48,11 @@ from app.schemas.resource import (
     OperatorResponse,
     OperatorUpdate,
 )
+from app.schemas.scheduling import (
+    FeasibilityCheckRequest,
+    FeasibilityConstraintDetails,
+    FeasibilityResponse,
+)
 from app.schemas.service_request import (
     ServiceRequestCreate,
     ServiceRequestPaginatedResponse,
@@ -71,6 +76,9 @@ __all__ = [
     "CHCPaginatedResponse",
     "CHCResponse",
     "CHCUpdate",
+    "FeasibilityCheckRequest",
+    "FeasibilityConstraintDetails",
+    "FeasibilityResponse",
     "LogoutRequest",
     "MachineAvailabilityCreate",
     "MachineAvailabilityPaginatedResponse",

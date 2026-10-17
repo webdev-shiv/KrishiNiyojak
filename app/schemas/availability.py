@@ -17,18 +17,14 @@ class MachineAvailabilityCreate(BaseModel):
     slot_type: str = Field(
         "FULL_DAY", description="Slot type: FULL_DAY, HALF_DAY_MORNING, HALF_DAY_AFTERNOON"
     )
-    status: str = Field(
-        "FREE", description="Status: FREE, HELD, BOOKED, BLOCKED_MAINTENANCE"
-    )
+    status: str = Field("FREE", description="Status: FREE, HELD, BOOKED, BLOCKED_MAINTENANCE")
     note: str | None = Field(None, max_length=255, description="Operational notes")
 
 
 class MachineAvailabilityUpdate(BaseModel):
     """Schema for updating machine availability status or notes."""
 
-    status: str | None = Field(
-        None, description="Status: FREE, HELD, BOOKED, BLOCKED_MAINTENANCE"
-    )
+    status: str | None = Field(None, description="Status: FREE, HELD, BOOKED, BLOCKED_MAINTENANCE")
     note: str | None = Field(None, max_length=255)
 
 

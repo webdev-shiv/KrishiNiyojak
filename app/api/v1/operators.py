@@ -118,11 +118,7 @@ def list_operators(
         count_query = count_query.where(Operator.status == status_filter.strip().upper())
 
     total = db.execute(count_query).scalar_one() or 0
-    items = (
-        db.execute(query.order_by(Operator.id.asc()).offset(skip).limit(limit))
-        .scalars()
-        .all()
-    )
+    items = db.execute(query.order_by(Operator.id.asc()).offset(skip).limit(limit)).scalars().all()
 
     return {
         "items": items,

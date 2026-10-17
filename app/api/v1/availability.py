@@ -215,9 +215,7 @@ def update_machine_availability(
             detail=f"Machine availability slot {availability_id} not found",
         )
 
-    machine = db.execute(
-        select(Machine).where(Machine.id == slot.machine_id)
-    ).scalar_one_or_none()
+    machine = db.execute(select(Machine).where(Machine.id == slot.machine_id)).scalar_one_or_none()
     if machine:
         verify_resource_management_access(current_user, machine.chc_id, machine.owner_id, db)
 
@@ -251,9 +249,7 @@ def delete_machine_availability(
             detail=f"Machine availability slot {availability_id} not found",
         )
 
-    machine = db.execute(
-        select(Machine).where(Machine.id == slot.machine_id)
-    ).scalar_one_or_none()
+    machine = db.execute(select(Machine).where(Machine.id == slot.machine_id)).scalar_one_or_none()
     if machine:
         verify_resource_management_access(current_user, machine.chc_id, machine.owner_id, db)
 

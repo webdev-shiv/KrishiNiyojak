@@ -114,9 +114,7 @@ def list_attachments(
 
     total = db.execute(count_query).scalar_one() or 0
     items = (
-        db.execute(query.order_by(Attachment.name.asc()).offset(skip).limit(limit))
-        .scalars()
-        .all()
+        db.execute(query.order_by(Attachment.name.asc()).offset(skip).limit(limit)).scalars().all()
     )
 
     return {

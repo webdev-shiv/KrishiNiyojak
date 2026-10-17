@@ -165,13 +165,36 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T10: Scheduling Rules & Feasibility Checker
+- **Scope:**
+  - **Modular Feasibility Service ([app/services/feasibility.py](file:///e:/PROJECTS/hackshift/app/services/feasibility.py)):** Dedicated business logic evaluating proposed machine-day assignments and existing bookings against operational constraints without modifying state or creating persistent records.
+  - **Machinery & Horsepower Compatibility:** Enforces that machine horsepower meets or exceeds maximum required horsepower threshold across all requested implements (`machine.horsepower >= attachment.required_hp_min`), flagging power deficits as blocking violations.
+  - **Attachment Validation:** Verifies attachment existence, CHC ownership, and operational readiness (rejects `DAMAGED` or `MAINTENANCE` implements).
+  - **Calendar Availability Slots:** Integrates with T08 `MachineAvailability` and `OperatorAvailability` to detect conflicts on target dates and slots (blocking on machine maintenance or operator leave).
+  - **Active Booking Collisions:** Enforces cross-assignment collision prevention with active non-cancelled bookings (`Booking.status.notin_(["CANCELLED", "COMPLETED"])`) for both machinery and operators across `FULL_DAY`, `HALF_DAY_MORNING`, and `HALF_DAY_AFTERNOON` time slots.
+  - **Operator Eligibility & Licensing:** Validates operator active duty status, license registration, and flags experience advisories.
+  - **Configurable Haversine Travel Estimation:** Calculates straight-line distance (km) and estimated road transit time (minutes) using configurable rural road winding factor (`ROAD_WINDING_FACTOR = 1.3`) and machinery transit speed (`TRANSIT_SPEED_KMH = 25.0 km/h`) from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py). Enforces CHC operational radius boundary (`operating_radius_km`).
+  - **Acreage, Date Window & Deadline Constraints:** Enforces scheduling within farmer's requested start date and deadline. Calculates estimated work duration and issues advisory warnings if work exceeds half-day slot capacity.
+  - **API Endpoints ([app/api/v1/scheduling.py](file:///e:/PROJECTS/hackshift/app/api/v1/scheduling.py)):**
+    - `POST /api/v1/scheduling/feasibility` — Evaluates proposed assignments with zero persistent side effects.
+    - `GET /api/v1/scheduling/feasibility/{booking_id}` — Evaluates an existing booking excluding self-collision.
+  - **Granular RBAC & Tenant Isolation:** Farmers can only evaluate proposals linked to their own service requests and inspect their own bookings; CHC Managers are restricted to their managed hubs; cross-tenant access is rejected with HTTP 403 Forbidden.
+  - **Pydantic Schemas ([app/schemas/scheduling.py](file:///e:/PROJECTS/hackshift/app/schemas/scheduling.py)):** Structured schemas with explicit units (`distance_km`, `estimated_travel_time_minutes`, `machine_horsepower`, `acreage`, `estimated_work_duration_hours`, `slot_duration_hours`), blocking `reasons`, and advisory `warnings`.
+  - **Unit Test Suite ([tests/test_scheduling_feasibility.py](file:///e:/PROJECTS/hackshift/tests/test_scheduling_feasibility.py)):** 13 comprehensive tests covering calculations, slot overlap, horsepower compatibility, missing/cross-CHC implements, maintenance/leave blocking, booking collisions, deadline violations, radius bounds, capacity warnings, existing booking evaluation, and authorization.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py -v`): **PASS** (63 passed in 16.23s).
+  - Full pytest suite (`pytest -v`): 64 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter & format check (`ruff check .` & `ruff format --check .`): **PASS** (0 errors, 54 files formatted).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T10:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T11:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T12:** REST API Router Layer & Documentation
-- [ ] **Task T13:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T11:** Dynamic Scheduling Generation & Machine-Day Allocation Engine
+- [ ] **Task T12:** Breakdown Recovery & Dynamic Reallocation Workflows
+- [ ] **Task T13:** REST API Router Layer & Documentation
+- [ ] **Task T14:** React Native / Expo Mobile Client Scaffolding
 
 

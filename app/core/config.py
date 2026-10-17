@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Scheduling & Feasibility estimation settings
+    ROAD_WINDING_FACTOR: float = 1.3
+    TRANSIT_SPEED_KMH: float = 25.0
+    ESTIMATED_HOURS_PER_ACRE: float = 0.8
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:
