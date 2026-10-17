@@ -15,6 +15,7 @@ from app.schemas.recovery import (
     BreakdownCreateRequest,
     BreakdownImpactResponse,
     BreakdownPaginatedResponse,
+    BreakdownRecoveryResponse,
     BreakdownResponse,
 )
 from app.services.breakdown import (
@@ -22,6 +23,7 @@ from app.services.breakdown import (
     list_breakdowns_for_user,
     report_breakdown_and_analyze,
 )
+from app.services.recovery import generate_breakdown_recovery_alternatives
 
 router = APIRouter(prefix="/breakdowns", tags=["Breakdown & Recovery Impact"])
 
@@ -75,6 +77,58 @@ def get_breakdown_impact(
         db=db,
         breakdown_id=breakdown_id,
         current_user=current_user,
+    )
+
+
+@router.post(
+    "/{breakdown_id}/recovery-alternatives",
+    response_model=BreakdownRecoveryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate candidate recovery alternatives and ranking for affected bookings",
+)
+def generate_recovery_plan(
+    breakdown_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> BreakdownRecoveryResponse:
+    """Evaluate and rank recovery alternatives for bookings disrupted by a machine breakdown.
+
+    - Identifies compatible machinery and available operators in the CHC.
+    - Evaluates operational feasibility using the T10 feasibility checker.
+    - Computes multi-factor ranking scores (Delay 35%, Transit 25%, Cost 25%, Availability 15%).
+    - Generates a candidate RecoveryPlan proposal with status PROPOSED.
+    - Does not modify bookings or commit operational state changes.
+
+    Enforces CHC manager authorization and tenant isolation.
+    """
+    return generate_breakdown_recovery_alternatives(
+        db=db,
+        breakdown_id=breakdown_id,
+        current_user=current_user,
+        persist_proposed_plan=True,
+    )
+
+
+@router.get(
+    "/{breakdown_id}/recovery-alternatives",
+    response_model=BreakdownRecoveryResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve recovery alternatives recommendations and ranking queue",
+)
+def get_recovery_alternatives(
+    breakdown_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> BreakdownRecoveryResponse:
+    """Retrieve evaluated recovery alternatives and ranking recommendations
+
+    for a machine breakdown incident without modifying state.
+    """
+    return generate_breakdown_recovery_alternatives(
+        db=db,
+        breakdown_id=breakdown_id,
+        current_user=current_user,
+        persist_proposed_plan=False,
     )
 
 

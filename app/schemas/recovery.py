@@ -1,6 +1,7 @@
 """Pydantic schemas for Breakdown Reporting, Impact Analysis, and Customer Priority (T12)."""
 
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -141,3 +142,72 @@ class BreakdownPaginatedResponse(BaseModel):
     total: int
     page: int
     size: int
+
+
+class RecoveryAlternativeResponse(BaseModel):
+    """Individual evaluated operational recovery alternative for an affected booking (T13)."""
+
+    alternative_id: str
+    strategy: str = Field(..., description="REPLACE_MACHINE, TIME_SHIFT, SUBCONTRACT, etc.")
+    booking_id: int
+    booking_code: str
+    replacement_machine_id: int
+    replacement_machine_name: str
+    replacement_machine_hp: float
+    replacement_operator_id: int | None = None
+    replacement_operator_name: str | None = None
+    proposed_date: date
+    proposed_slot: str
+    is_feasible: bool
+    score: int = Field(..., ge=0, le=100, description="Ranking score from 0 to 100")
+    estimated_cost: Decimal
+    additional_cost: Decimal
+    travel_distance_km: float
+    travel_time_minutes: float
+    delay_days: int
+    missed_deadline: bool
+    reasons: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingRecoveryPlan(BaseModel):
+    """Candidate recovery alternatives queue for a specific disrupted booking (T13)."""
+
+    booking_id: int
+    booking_code: str
+    farmer_name: str
+    operation_type: str
+    original_date: date
+    deadline: date | None = None
+    acreage: float | None = None
+    priority_score: int
+    ranked_alternatives: list[RecoveryAlternativeResponse] = Field(default_factory=list)
+    recommended_alternative: RecoveryAlternativeResponse | None = None
+    no_alternative_reason: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BreakdownRecoveryResponse(BaseModel):
+    """Overall recovery recommendations and ranked alternatives for a breakdown (T13)."""
+
+    breakdown_id: int
+    machine_id: int
+    machine_registration: str
+    chc_id: int
+    chc_name: str
+    failure_type: str
+    severity: str
+    total_affected_bookings: int
+    recoverable_bookings_count: int
+    unrecoverable_bookings_count: int
+    recovery_plan_id: int | None = None
+    booking_recovery_plans: list[BookingRecoveryPlan] = Field(default_factory=list)
+    cross_chc_supported: bool = False
+    cross_chc_notes: str = (
+        "Cross-CHC borrowing is restricted by current single-CHC manager RBAC boundaries."
+    )
+
+    model_config = ConfigDict(from_attributes=True)

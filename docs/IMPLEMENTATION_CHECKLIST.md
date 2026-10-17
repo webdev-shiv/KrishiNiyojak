@@ -239,11 +239,36 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T13: Recovery Alternatives & Ranking
+- **Scope:**
+  - **Recovery Alternatives Generation Engine ([app/services/recovery.py](file:///e:/PROJECTS/hackshift/app/services/recovery.py)):** Evaluates candidate operational recovery options for bookings disrupted by machinery breakdowns. Searches compatible fleet machinery and certified operators within the Custom Hiring Centre (CHC).
+  - **Feasibility & Operational Constraints Integration:** Seamlessly leverages the T10 Feasibility Checker to verify implement horsepower thresholds, calendar availability slots, active booking collision avoidance, travel radius limits, and operator duty.
+  - **Multi-Factor Ranking Formula (0–100):** Evaluates and ranks alternatives using configurable weights from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py):
+    - **Expected Delay & Deadline Risk (35% weight):** Zero delay (same-day substitute: 35.0 pts); 1 day delay (28.0 pts); 2 days delay (20.0 pts); 3–4 days delay (14.0 pts); $\ge 5$ days delay (8.0 pts); missed farmer deadline (penalized to 2.0 pts with `missed_deadline=True`).
+    - **Travel Distance / Transit Time (25% weight):** $\le 5.0$ km (25.0 pts); $5.0–15.0$ km (20.0 pts); $15.0–25.0$ km (14.0 pts); $25.0$ km to CHC operating radius (8.0 pts); outside radius (0.0 pts).
+    - **Differential / Additional Cost (25% weight):** Cost neutral or cheaper (25.0 pts); $< 15\%$ premium (20.0 pts); $15–30\%$ premium (14.0 pts); $30–50\%$ premium (8.0 pts); $\ge 50\%$ premium (3.0 pts).
+    - **Resource Availability & Familiarity (15% weight):** Machine unreserved calendar slot (6.7 pts); original operator customer continuity (3.3 pts); alternative qualified operator (2.0 pts).
+  - **Root-Cause Failure Diagnostics:** Transparently identifies and reports primary blocking constraints when no feasible alternative exists (e.g. no machine with sufficient horsepower, all compatible machines booked/under maintenance, or deadline exceeded).
+  - **Zero Direct Booking Modifications:** Recommendations are non-destructive and strictly propose recovery options. Persists candidate plans into the existing `RecoveryPlan` model (`status = "PROPOSED"`) and `RecoveryPlanItem`s (`status = "PENDING"`) without modifying `Booking` or `Machine` records.
+  - **Documented Cross-CHC Limitation:** Cross-CHC resource borrowing is clearly documented in API responses and system documentation as restricted by single-CHC manager RBAC boundaries.
+  - **Manager-Only API Endpoints ([app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py)):**
+    - `POST /api/v1/breakdowns/{breakdown_id}/recovery-alternatives` — Evaluates, ranks, and creates candidate `RecoveryPlan` proposal.
+    - `GET /api/v1/breakdowns/{breakdown_id}/recovery-alternatives` — Retrieves evaluated recovery recommendations without database mutation.
+  - **Granular RBAC & Tenant Isolation:** Strictly accessible to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the breakdown's CHC (`verify_chc_manager_access`). Farmers, operators, and unauthorized managers receive HTTP 403 Forbidden.
+  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):** `RecoveryAlternativeResponse`, `BookingRecoveryPlan`, `BreakdownRecoveryResponse`.
+  - **Unit Test Suite ([tests/test_recovery_ranking.py](file:///e:/PROJECTS/hackshift/tests/test_recovery_ranking.py)):** 6 comprehensive tests covering candidate generation, ranking score formulas, horsepower compatibility, slot conflict/maintenance avoidance, deadline penalties, no-alternative root cause reporting, and cross-CHC authorization.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py tests/test_recovery_ranking.py -v`): **PASS** (84 passed in 32.28s).
+  - Full pytest suite (`pytest -v`): 85 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter & format check (`ruff check .` & `ruff format --check .`): **PASS** (0 errors, 64 files formatted).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T13:** Recovery Alternatives & Dynamic Rescheduling Workflows
-- [ ] **Task T14:** Mobile Client & Dispatch Notification Scaffolding
+- [ ] **Task T14:** Recovery Plan Approval, Execution & Mobile Dispatch Notification Scaffolding
+
 
 

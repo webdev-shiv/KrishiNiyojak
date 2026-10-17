@@ -145,6 +145,7 @@ The project includes an operational backend verified through automated pytest te
 | **Scheduling Feasibility (T10)** | ✅ Verified | Modular business engine evaluating compatibility without database side-effects (`POST /api/v1/scheduling/feasibility` & `GET /api/v1/scheduling/feasibility/{booking_id}`). Checks HP thresholds, availability slots, booking collisions, Haversine travel distance, road transit time, and operational radius limits. |
 | **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review (`GET /api/v1/schedules/{id}`), list (`GET /api/v1/schedules?chc_id=...`), non-destructive rejection (`POST /api/v1/schedules/{id}/reject`), and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
 | **Breakdown Impact & Customer Priority (T12)** | ✅ Verified | In-field breakdown incident reporting (`POST /api/v1/breakdowns` & `POST /api/v1/machines/{id}/breakdown`), machine status transition (`BROKEN_DOWN`), maintenance slot blocking, dependent booking identification (excluding cancelled/completed), status transition to `DISRUPTED`, and transparent customer priority scoring (1-100) based on deadline urgency, downtime, crop criticality, and acreage with explanatory rationales (`GET /api/v1/breakdowns/{id}/impact`). |
+| **Recovery Alternatives & Ranking (T13)** | ✅ Verified | Operational recovery alternative generation for disrupted bookings (`POST /api/v1/breakdowns/{id}/recovery-alternatives` & `GET /api/v1/breakdowns/{id}/recovery-alternatives`). Evaluates compatible CHC fleet machinery, horsepower, implement attachments, and operator availability via the T10 Feasibility Checker. Ranks candidates using a multi-factor score (Delay 35%, Transit 25%, Cost 25%, Availability 15%), penalizes deadline risks, provides root-cause failure diagnostics when no alternative exists, and generates non-destructive proposals (`RecoveryPlan` status `PROPOSED`) without mutating bookings. |
 | **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
 
 ---
@@ -194,6 +195,7 @@ The project includes an operational backend verified through automated pytest te
 │   │   └── scheduling.py               # Feasibility and schedule proposal models
 │   └── services/
 │       ├── breakdown.py                # Breakdown reporting & customer priority scoring
+│       ├── recovery.py                 # Recovery alternative generation & multi-factor ranking
 │       ├── feasibility.py              # Modular scheduling rules & travel estimation
 │       ├── scheduler.py                # Candidate schedule generation & approval engine
 │       └── schedule_store.py           # Thread-safe in-memory schedule proposal registry
@@ -206,7 +208,8 @@ The project includes an operational backend verified through automated pytest te
 │   ├── test_bookings.py                # 8 Booking state machine & lifecycle tests
 │   ├── test_scheduling_feasibility.py  # 13 Feasibility checker & travel tests
 │   ├── test_scheduling_generation.py   # 8 Schedule generation & approval tests
-│   └── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
+│   ├── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
+│   └── test_recovery_ranking.py        # 6 Recovery alternative & ranking tests
 ├── alembic/                            # Alembic database migrations
 ├── run.ps1                             # Automated PowerShell startup & test script
 ├── pyproject.toml                      # Project metadata & Python dependencies
@@ -256,8 +259,8 @@ Once the application is running, open:
 Execute the automated test suite:
 
 ```powershell
-# Run all independent unit tests (78 tests)
-pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py -v
+# Run all independent unit tests (84 tests)
+pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py tests/test_recovery_ranking.py -v
 
 # Run code style & lint checks with Ruff
 ruff check .

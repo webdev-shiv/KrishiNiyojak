@@ -36,10 +36,13 @@ from app.schemas.chc import (
 )
 from app.schemas.recovery import (
     AffectedBookingImpact,
+    BookingRecoveryPlan,
     BreakdownCreateRequest,
     BreakdownImpactResponse,
     BreakdownPaginatedResponse,
+    BreakdownRecoveryResponse,
     BreakdownResponse,
+    RecoveryAlternativeResponse,
 )
 from app.schemas.resource import (
     AttachmentCreate,
@@ -82,11 +85,13 @@ __all__ = [
     "BookingCancelRequest",
     "BookingCreate",
     "BookingPaginatedResponse",
+    "BookingRecoveryPlan",
     "BookingResponse",
     "BookingUpdate",
     "BreakdownCreateRequest",
     "BreakdownImpactResponse",
     "BreakdownPaginatedResponse",
+    "BreakdownRecoveryResponse",
     "BreakdownResponse",
     "CHCCreate",
     "CHCMembershipCreate",
@@ -116,6 +121,7 @@ __all__ = [
     "OperatorPaginatedResponse",
     "OperatorResponse",
     "OperatorUpdate",
+    "RecoveryAlternativeResponse",
     "RefreshTokenRequest",
     "ScheduleGenerateRequest",
     "ScheduleRejectRequest",

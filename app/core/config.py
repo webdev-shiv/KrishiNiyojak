@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     DEFAULT_REPAIR_HOURS_MEDIUM: float = 24.0
     DEFAULT_REPAIR_HOURS_CRITICAL: float = 72.0
 
+    # Recovery Alternatives & Ranking settings (T13)
+    RECOVERY_WEIGHT_DELAY: float = 0.35
+    RECOVERY_WEIGHT_TRANSIT: float = 0.25
+    RECOVERY_WEIGHT_COST: float = 0.25
+    RECOVERY_WEIGHT_AVAILABILITY: float = 0.15
+    MAX_RECOVERY_SEARCH_DAYS: int = 7
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:
