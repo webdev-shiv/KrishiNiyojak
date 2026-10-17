@@ -84,13 +84,30 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Live PostgreSQL database migration: **PENDING USER SETUP** (Not claimed as applied; awaits user `.env` database connection).
 - **Status:** **PASS** (Models & Migration Verified; Live DB execution pending user `.env`)
 
+### [x] Task T06: Authentication & Authorization
+- **Scope:**
+  - Argon2id password hashing and verification ([app/core/security.py](file:///e:/PROJECTS/hackshift/app/core/security.py)).
+  - User registration (`POST /api/v1/auth/register`) with base 'FARMER' role; self-granting privileged roles is blocked.
+  - User login (`POST /api/v1/auth/login`) with credential verification issuing JWT access tokens and opaque refresh tokens.
+  - Short-lived JWT access tokens with configurable expiration, subject, and roles payload.
+  - Cryptographically random opaque refresh tokens, storing only SHA-256 hashes in the database with rotation and revocation support.
+  - Token refresh endpoint (`POST /api/v1/auth/refresh`) enforcing single-use rotation and invalidating old tokens.
+  - Logout endpoint (`POST /api/v1/auth/logout`) explicitly revoking refresh tokens.
+  - Reusable FastAPI dependencies ([app/api/deps.py](file:///e:/PROJECTS/hackshift/app/api/deps.py)): `get_current_user`, `get_current_active_user`, and `require_roles`.
+  - Role-based authorization across system roles (`Role`, `UserRole`) and organizational roles (`CHCMembership`) supporting Farmer, CHC Manager, Resource Owner, Operator, and Superadmin.
+  - Unit test suite ([tests/test_auth.py](file:///e:/PROJECTS/hackshift/tests/test_auth.py)) covering hashing, token validation, refresh rotation, revocation, and RBAC.
+- **Verification:**
+  - Pytest suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py`): **PASS** (18 passed in 3.37s).
+  - Ruff linter & formatter check: **PASS** (All checks passed, 34 files formatted).
+  - Security review: Zero hardcoded secrets; credentials read from environment variables; passwords hashed with Argon2id; refresh tokens stored as hashes.
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T06:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T07:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T08:** Authentication, Security & Role-Based Access Control
+- [ ] **Task T07:** Core Scheduling Engine & Capacity Planning
+- [ ] **Task T08:** Breakdown Recovery & Dynamic Reallocation Workflows
 - [ ] **Task T09:** REST API Router Layer & Documentation
 - [ ] **Task T10:** React Native / Expo Mobile Client Scaffolding
 

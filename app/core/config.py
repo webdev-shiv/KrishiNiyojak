@@ -18,6 +18,12 @@ class Settings(BaseSettings):
         "aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require"
     )
 
+    # Security & JWT configuration
+    JWT_SECRET_KEY: str = "insecure-development-secret-key-please-override-in-env-at-least-32-bytes"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:
