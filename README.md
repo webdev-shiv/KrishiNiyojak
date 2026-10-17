@@ -144,6 +144,7 @@ The project includes an operational backend verified through automated pytest te
 | **Booking Lifecycle (T09)** | ✅ Verified | Conversion of approved requests into machine-day agreements, unique booking codes, conflict validation, role-scoped queries, cancellation workflows, and state-machine transitions. |
 | **Scheduling Feasibility (T10)** | ✅ Verified | Modular business engine evaluating compatibility without database side-effects (`POST /api/v1/scheduling/feasibility` & `GET /api/v1/scheduling/feasibility/{booking_id}`). Checks HP thresholds, availability slots, booking collisions, Haversine travel distance, road transit time, and operational radius limits. |
 | **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review (`GET /api/v1/schedules/{id}`), list (`GET /api/v1/schedules?chc_id=...`), non-destructive rejection (`POST /api/v1/schedules/{id}/reject`), and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
+| **Breakdown Impact & Customer Priority (T12)** | ✅ Verified | In-field breakdown incident reporting (`POST /api/v1/breakdowns` & `POST /api/v1/machines/{id}/breakdown`), machine status transition (`BROKEN_DOWN`), maintenance slot blocking, dependent booking identification (excluding cancelled/completed), status transition to `DISRUPTED`, and transparent customer priority scoring (1-100) based on deadline urgency, downtime, crop criticality, and acreage with explanatory rationales (`GET /api/v1/breakdowns/{id}/impact`). |
 | **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
 
 ---
@@ -172,9 +173,10 @@ The project includes an operational backend verified through automated pytest te
 │   │       ├── availability.py         # Machine & operator calendar slots
 │   │       ├── bookings.py             # Operational booking lifecycle endpoints
 │   │       ├── scheduling.py           # Feasibility checking endpoints
-│   │       └── schedules.py            # Schedule generation, review, approval & rejection
+│   │       ├── schedules.py            # Schedule generation, review, approval & rejection
+│   │       └── breakdowns.py           # Breakdown reporting & impact analysis endpoints
 │   ├── core/
-│   │   ├── config.py                   # Pydantic Settings & travel model parameters
+│   │   ├── config.py                   # Pydantic Settings & priority scoring weights
 │   │   └── security.py                 # Argon2id hashing & JWT token issuance
 │   ├── db/
 │   │   ├── base.py                     # SQLAlchemy 2.x declarative Base
@@ -188,8 +190,10 @@ The project includes an operational backend verified through automated pytest te
 │   │   ├── recovery.py                 # Breakdowns, RecoveryPlans, Priorities
 │   │   └── supporting.py               # RefreshTokens, AuditLogs, Notifications
 │   ├── schemas/                        # Pydantic v2 schemas for all domains
+│   │   ├── recovery.py                 # Breakdown reporting and impact analysis models
 │   │   └── scheduling.py               # Feasibility and schedule proposal models
 │   └── services/
+│       ├── breakdown.py                # Breakdown reporting & customer priority scoring
 │       ├── feasibility.py              # Modular scheduling rules & travel estimation
 │       ├── scheduler.py                # Candidate schedule generation & approval engine
 │       └── schedule_store.py           # Thread-safe in-memory schedule proposal registry
@@ -201,7 +205,8 @@ The project includes an operational backend verified through automated pytest te
 │   ├── test_service_requests_and_availability.py # 8 Demand intake & slot tests
 │   ├── test_bookings.py                # 8 Booking state machine & lifecycle tests
 │   ├── test_scheduling_feasibility.py  # 13 Feasibility checker & travel tests
-│   └── test_scheduling_generation.py   # 8 Schedule generation & approval tests
+│   ├── test_scheduling_generation.py   # 8 Schedule generation & approval tests
+│   └── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
 ├── alembic/                            # Alembic database migrations
 ├── run.ps1                             # Automated PowerShell startup & test script
 ├── pyproject.toml                      # Project metadata & Python dependencies
@@ -251,8 +256,8 @@ Once the application is running, open:
 Execute the automated test suite:
 
 ```powershell
-# Run all independent unit tests (71 tests)
-pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py -v
+# Run all independent unit tests (78 tests)
+pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py -v
 
 # Run code style & lint checks with Ruff
 ruff check .

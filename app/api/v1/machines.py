@@ -13,12 +13,17 @@ from app.api.deps import (
 from app.models.chc import CHC
 from app.models.identity import User
 from app.models.resource import Machine, ResourceOwner
+from app.schemas.recovery import (
+    BreakdownCreateRequest,
+    BreakdownImpactResponse,
+)
 from app.schemas.resource import (
     MachineCreate,
     MachinePaginatedResponse,
     MachineResponse,
     MachineUpdate,
 )
+from app.services.breakdown import report_breakdown_and_analyze
 
 router = APIRouter(prefix="/machines", tags=["Machinery Fleet"])
 
@@ -237,3 +242,24 @@ def deactivate_machine(
     db.commit()
     db.refresh(machine)
     return machine
+
+
+@router.post(
+    "/{machine_id}/breakdown",
+    response_model=BreakdownImpactResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Report a breakdown incident specifically for this machine asset",
+)
+def report_machine_specific_breakdown(
+    machine_id: int,
+    payload: BreakdownCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> BreakdownImpactResponse:
+    """Report an operational failure for this machine asset and compute impact analysis."""
+    payload.machine_id = machine_id
+    return report_breakdown_and_analyze(
+        db=db,
+        payload=payload,
+        current_user=current_user,
+    )

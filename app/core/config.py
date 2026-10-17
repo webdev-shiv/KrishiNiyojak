@@ -29,6 +29,16 @@ class Settings(BaseSettings):
     TRANSIT_SPEED_KMH: float = 25.0
     ESTIMATED_HOURS_PER_ACRE: float = 0.8
 
+    # Breakdown & Customer Priority scoring settings (T12)
+    PRIORITY_WEIGHT_URGENCY: float = 0.40
+    PRIORITY_WEIGHT_CRITICALITY: float = 0.25
+    PRIORITY_WEIGHT_DELAY_RISK: float = 0.20
+    PRIORITY_WEIGHT_ACREAGE: float = 0.15
+    DEFAULT_ACREAGE_BASELINE: float = 5.0
+    DEFAULT_REPAIR_HOURS_LOW: float = 8.0
+    DEFAULT_REPAIR_HOURS_MEDIUM: float = 24.0
+    DEFAULT_REPAIR_HOURS_CRITICAL: float = 72.0
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:

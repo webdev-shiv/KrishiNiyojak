@@ -212,12 +212,38 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T12: Breakdown Impact Analysis & Customer Priority
+- **Scope:**
+  - **Breakdown Reporting Workflow ([app/services/breakdown.py](file:///e:/PROJECTS/hackshift/app/services/breakdown.py)):** In-field machinery failure incident reporting capturing failure type, severity (`LOW`, `MEDIUM`, `CRITICAL`), description, GPS location, reported timestamp, and affected booking linkage. Updates machine status to `BROKEN_DOWN` and future machine availability slots to `BLOCKED_MAINTENANCE`.
+  - **Affected Booking Identification:** Accurately queries all bookings dependent on the broken machine on or after the breakdown date (`scheduled_date >= breakdown_date`, `machine_id == machine.id`). Strictly excludes `CANCELLED` and `COMPLETED` bookings. Transitions affected active/scheduled bookings to `DISRUPTED`.
+  - **Configurable Customer Priority Scoring Engine:** Computes a transparent, deterministic priority score (1 to 100) using configurable weights from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py):
+    - **Deadline Urgency (40% weight):** Buffer days to farmer's deadline (`<=0` days: 40/36 pts; `1` day: 30 pts; `2` days: 22 pts; `3-4` days: 15 pts; `>=5` days: 8 pts; missing deadline default: 15 pts).
+    - **Job Criticality (25% weight):** SOWING/PLANTING (25 pts), HARVESTING (23 pts), SPRAYING (20 pts), PLOWING (14 pts), OTHER (10 pts), unspecified default (12 pts).
+    - **Delay Risk & Downtime (20% weight):** Evaluates estimated repair duration vs. buffer days; categorizes severity (`CRITICAL`: 20 pts, `MEDIUM`: 14 pts, `LOW`: 8 pts) and computes `delay_risk` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) and `missed_deadline_risk` (bool).
+    - **Acreage Scale (15% weight):** `>=20` ac (15 pts), `10-20` ac (12 pts), `5-10` ac (9 pts), `<5` ac (6 pts), unspecified default (`DEFAULT_ACREAGE_BASELINE = 5.0` -> 9 pts).
+  - **Transparent Explanations & Database Persistence:** Generates detailed `priority_reasons` for each factor, clearly documenting any defaults applied. Persists and updates `BookingPriority` records in the database.
+  - **Priority Ordering & Summary Metrics:** Returns affected bookings sorted in descending order of priority score (tie-breaking on smaller buffer days and earlier date), alongside summary statistics (total affected jobs, breakdown of priority levels, missed deadline count, affected acreage).
+  - **API Endpoints ([app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py), [app/api/v1/machines.py](file:///e:/PROJECTS/hackshift/app/api/v1/machines.py)):**
+    - `POST /api/v1/breakdowns` — Report breakdown and calculate impact analysis.
+    - `POST /api/v1/machines/{machine_id}/breakdown` — Report breakdown specifically for a machine asset.
+    - `GET /api/v1/breakdowns/{breakdown_id}/impact` — Retrieve impact analysis and customer priority queue.
+    - `GET /api/v1/breakdowns/{breakdown_id}` — Get breakdown record details.
+    - `GET /api/v1/breakdowns` — List reported breakdowns with CHC, machine, and status filters.
+  - **Granular RBAC & Tenant Isolation:** Restricted to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the machine's CHC (`verify_chc_manager_access`). Farmers, operators, and unauthorized managers receive HTTP 403 Forbidden.
+  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):** `BreakdownCreateRequest`, `AffectedBookingImpact`, `BreakdownImpactResponse`, `BreakdownResponse`, `BreakdownPaginatedResponse`.
+  - **Unit Test Suite ([tests/test_breakdown_impact.py](file:///e:/PROJECTS/hackshift/tests/test_breakdown_impact.py)):** 7 comprehensive tests covering breakdown reporting, machine status updates, availability blocking, affected booking identification, cancellation/completion exclusions, transparent priority scoring and ordering, missing data defaults, and cross-CHC authorization.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py -v`): **PASS** (78 passed in 14.50s).
+  - Full pytest suite (`pytest -v`): 79 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter & format check (`ruff check .` & `ruff format --check .`): **PASS** (0 errors, 62 files formatted).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T12:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T13:** REST API Router Layer & Documentation
-- [ ] **Task T14:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T13:** Recovery Alternatives & Dynamic Rescheduling Workflows
+- [ ] **Task T14:** Mobile Client & Dispatch Notification Scaffolding
 
 
