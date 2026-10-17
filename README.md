@@ -34,20 +34,34 @@ Machine-Day Composer is an agricultural machinery scheduling and breakdown-recov
 
 ```
 .
+├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 ├── pyproject.toml
+├── alembic.ini
 ├── README.md
+├── alembic/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
+│       └── 814e8227b8d4_initial_infrastructure_setup.py
 ├── app/
 │   ├── __init__.py
 │   ├── main.py
-│   └── core/
+│   ├── core/
+│   │   ├── __init__.py
+│   │   └── config.py
+│   └── db/
 │       ├── __init__.py
-│       └── config.py
+│       ├── base.py
+│       └── session.py
 ├── docs/
 │   ├── README.md
+│   ├── ARCHITECTURE.md
 │   └── IMPLEMENTATION_CHECKLIST.md
 └── tests/
     ├── __init__.py
+    ├── test_database.py
     └── test_health.py
 ```
 
@@ -58,8 +72,16 @@ Machine-Day Composer is an agricultural machinery scheduling and breakdown-recov
 ### Prerequisites
 
 - Python 3.12 or newer
+- Docker & Docker Compose (for local PostgreSQL container)
 
 ### 1. Environment Setup
+
+Create and configure local environment variables:
+
+```bash
+# Copy example environment configuration
+cp .env.example .env
+```
 
 Create and activate a virtual environment:
 
@@ -75,13 +97,47 @@ source .venv/bin/activate
 
 ### 2. Dependency Installation
 
-Install the project along with development dependencies:
+Install the project along with development and database dependencies:
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-### 3. Running the Development Server
+### 3. Local Database Infrastructure (Docker Compose)
+
+Start the local PostgreSQL 16 container with persistent storage and healthchecks:
+
+```bash
+docker compose up -d
+```
+
+To verify database health:
+
+```bash
+docker compose ps
+```
+
+To stop the database service:
+
+```bash
+docker compose down
+```
+
+### 4. Database Migrations (Alembic)
+
+Apply all database schema migrations to the latest revision (`head`):
+
+```bash
+alembic upgrade head
+```
+
+To rollback the most recent migration:
+
+```bash
+alembic downgrade -1
+```
+
+### 5. Running the Development Server
 
 Start the local FastAPI development server with Uvicorn:
 
@@ -93,12 +149,16 @@ The application will be accessible at:
 - API Root / Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - Health Check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-### 4. Running Tests & Quality Checks
+### 6. Running Tests & Quality Checks
 
 Run the pytest test suite:
 
 ```bash
+# Run all tests (requires active database container for connectivity verification)
 pytest
+
+# Run health check unit tests only
+pytest tests/test_health.py
 ```
 
 Run code formatting and linting checks with Ruff:
@@ -106,3 +166,4 @@ Run code formatting and linting checks with Ruff:
 ```bash
 ruff check .
 ```
+
