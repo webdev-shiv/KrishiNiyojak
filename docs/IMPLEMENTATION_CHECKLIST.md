@@ -29,14 +29,28 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Ruff check passed: 0 errors detected.
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T03: Architecture Specification
+- **Scope:**
+  - Modular-monolith architecture definition utilizing FastAPI, PostgreSQL, SQLAlchemy 2.x, Alembic, Pydantic, pytest, Argon2id/JWT, Docker Compose, and React Native/Expo.
+  - Comprehensive module boundaries defined: `auth`, `users`, `chcs`, `resources`, `service_requests`, `bookings`, `availability`, `scheduling`, `breakdown_recovery`, `notifications`, `audit_logs`.
+  - Entity-relationship model mapped (ER diagram, ownership, CHC membership, multi-tenancy).
+  - Lifecycles and workflows articulated: booking state machine, hard/soft scheduling constraints, manager approval gates, and breakdown recovery workflow.
+  - API conventions, security/RBAC, testing strategy, configuration principles, and Alembic migration rules defined.
+  - Explicit recording of unresolved business decisions (slot granularity, cross-CHC aid, payment handling, offline mobile sync).
+- **Verification:**
+  - `docs/ARCHITECTURE.md` verified complete and aligned with technology choices.
+  - `docs/README.md` updated with links.
+  - No application code, database models, or migrations prematurely introduced.
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T03:** Database & Local Infrastructure (PostgreSQL, Docker Compose, SQLAlchemy 2.x, Alembic)
-- [ ] **Task T04:** Domain Entities & Migration Scaffolding
-- [ ] **Task T05:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T06:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T07:** Authentication, Security & Role-Based Access Control
-- [ ] **Task T08:** REST API Router Layer & Documentation
-- [ ] **Task T09:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T04:** Database & Local Infrastructure (PostgreSQL, Docker Compose, SQLAlchemy 2.x, Alembic)
+- [ ] **Task T05:** Domain Entities & Initial Migrations
+- [ ] **Task T06:** Core Scheduling Engine & Capacity Planning
+- [ ] **Task T07:** Breakdown Recovery & Dynamic Reallocation Workflows
+- [ ] **Task T08:** Authentication, Security & Role-Based Access Control
+- [ ] **Task T09:** REST API Router Layer & Documentation
+- [ ] **Task T10:** React Native / Expo Mobile Client Scaffolding
