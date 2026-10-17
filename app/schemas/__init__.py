@@ -9,6 +9,16 @@ from app.schemas.auth import (
     UserRegisterRequest,
     UserResponse,
 )
+from app.schemas.availability import (
+    MachineAvailabilityCreate,
+    MachineAvailabilityPaginatedResponse,
+    MachineAvailabilityResponse,
+    MachineAvailabilityUpdate,
+    OperatorAvailabilityCreate,
+    OperatorAvailabilityPaginatedResponse,
+    OperatorAvailabilityResponse,
+    OperatorAvailabilityUpdate,
+)
 from app.schemas.chc import (
     CHCCreate,
     CHCMembershipCreate,
@@ -31,6 +41,12 @@ from app.schemas.resource import (
     OperatorResponse,
     OperatorUpdate,
 )
+from app.schemas.service_request import (
+    ServiceRequestCreate,
+    ServiceRequestPaginatedResponse,
+    ServiceRequestResponse,
+    ServiceRequestUpdate,
+)
 
 __all__ = [
     "AttachmentCreate",
@@ -44,16 +60,28 @@ __all__ = [
     "CHCResponse",
     "CHCUpdate",
     "LogoutRequest",
+    "MachineAvailabilityCreate",
+    "MachineAvailabilityPaginatedResponse",
+    "MachineAvailabilityResponse",
+    "MachineAvailabilityUpdate",
     "MachineCreate",
     "MachinePaginatedResponse",
     "MachineResponse",
     "MachineUpdate",
     "MessageResponse",
+    "OperatorAvailabilityCreate",
+    "OperatorAvailabilityPaginatedResponse",
+    "OperatorAvailabilityResponse",
+    "OperatorAvailabilityUpdate",
     "OperatorCreate",
     "OperatorPaginatedResponse",
     "OperatorResponse",
     "OperatorUpdate",
     "RefreshTokenRequest",
+    "ServiceRequestCreate",
+    "ServiceRequestPaginatedResponse",
+    "ServiceRequestResponse",
+    "ServiceRequestUpdate",
     "TokenResponse",
     "UserLoginRequest",
     "UserRegisterRequest",

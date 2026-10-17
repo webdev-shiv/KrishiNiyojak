@@ -134,13 +134,28 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - API documentation (`/docs`, `/redoc`): Verified operational and reflecting all new resource paths.
 - **Status:** **PASS** (Completed & Verified)
 
+### [x] Task T08: Availability & Farmer Service Requests
+- **Scope:**
+  - **Farmer Service Requests ([app/api/v1/service_requests.py](file:///e:/PROJECTS/hackshift/app/api/v1/service_requests.py)):** Endpoints for submission (`POST`), scoped listing (`GET`), retrieval (`GET /{id}`), and modification/cancellation (`PUT /{id}`). Strict farmer ownership scoping (farmers only access their own requests). CHC Managers can view and approve/reject requests submitted to their managed hubs. Farmers cannot self-approve requests.
+  - **Machine Availability ([app/api/v1/availability.py](file:///e:/PROJECTS/hackshift/app/api/v1/availability.py)):** Endpoints for scheduling (`POST`), listing (`GET`), viewing (`GET /{id}`), updating (`PUT /{id}`), and deleting (`DELETE /{id}`) machine-day slots (`FULL_DAY`, `HALF_DAY_MORNING`, `HALF_DAY_AFTERNOON`). Enforces conflict detection to prevent overlapping or duplicate reservations. Enforces manager/owner authorization.
+  - **Operator Availability ([app/api/v1/availability.py](file:///e:/PROJECTS/hackshift/app/api/v1/availability.py)):** Endpoints for scheduling, listing, viewing, updating, and removing operator duty/leave slots. Supports operator self-scheduling and CHC manager scheduling with slot conflict rejection.
+  - **Pydantic Validation ([app/schemas/service_request.py](file:///e:/PROJECTS/hackshift/app/schemas/service_request.py), [app/schemas/availability.py](file:///e:/PROJECTS/hackshift/app/schemas/availability.py)):** Validates coordinates, positive acreage, date ordering (`end_date >= start_date`), and allowed slot types.
+  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI documentation confirmed operational.
+  - **Unit Test Suite ([tests/test_service_requests_and_availability.py](file:///e:/PROJECTS/hackshift/tests/test_service_requests_and_availability.py)):** 8 comprehensive tests verifying valid submission, date validation, cross-farmer isolation, manager approval, machine availability scheduling, conflict checks, and operator duty management.
+- **Verification:**
+  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py -v`): **PASS** (42 passed in 6.53s).
+  - Full pytest suite (`pytest -v`): 43 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
+  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
+  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
+- **Status:** **PASS** (Completed & Verified)
+
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T08:** Core Scheduling Engine & Capacity Planning
-- [ ] **Task T09:** Breakdown Recovery & Dynamic Reallocation Workflows
-- [ ] **Task T10:** REST API Router Layer & Documentation
-- [ ] **Task T11:** React Native / Expo Mobile Client Scaffolding
+- [ ] **Task T09:** Core Scheduling Engine & Capacity Planning
+- [ ] **Task T10:** Breakdown Recovery & Dynamic Reallocation Workflows
+- [ ] **Task T11:** REST API Router Layer & Documentation
+- [ ] **Task T12:** React Native / Expo Mobile Client Scaffolding
 
 
