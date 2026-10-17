@@ -38,10 +38,6 @@ def test_docs_and_openapi_registered() -> None:
     assert "/api/v1/schedules" in schema["paths"]
     assert "/api/v1/breakdowns" in schema["paths"]
     assert "/api/v1/breakdowns/{breakdown_id}/impact" in schema["paths"]
-    assert "/api/v1/breakdowns/{breakdown_id}/recovery-alternatives" in schema["paths"]
-    assert "/api/v1/recovery-plans/{plan_id}" in schema["paths"]
-    assert "/api/v1/recovery-plans/{plan_id}/approve" in schema["paths"]
-    assert "/api/v1/recovery-plans/{plan_id}/reject" in schema["paths"]
 
 
 def test_unreachable_database_returns_503() -> None:

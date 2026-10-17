@@ -282,7 +282,7 @@ def report_breakdown_and_analyze(
 
     # 2. Parse breakdown time and defaults
     reported_at = payload.reported_at or datetime.now(UTC)
-    breakdown_date = reported_at.date()
+    breakdown_date = payload.reported_at.date() if payload.reported_at else date.today()
 
     severity = payload.severity.upper() if payload.severity else "MEDIUM"
     if payload.expected_repair_hours is not None:

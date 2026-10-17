@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # CORS configuration for frontend clients
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+    ]
+
     # Scheduling & Feasibility estimation settings
     ROAD_WINDING_FACTOR: float = 1.3
     TRANSIT_SPEED_KMH: float = 25.0
@@ -38,13 +48,6 @@ class Settings(BaseSettings):
     DEFAULT_REPAIR_HOURS_LOW: float = 8.0
     DEFAULT_REPAIR_HOURS_MEDIUM: float = 24.0
     DEFAULT_REPAIR_HOURS_CRITICAL: float = 72.0
-
-    # Recovery Alternatives & Ranking settings (T13)
-    RECOVERY_WEIGHT_DELAY: float = 0.35
-    RECOVERY_WEIGHT_TRANSIT: float = 0.25
-    RECOVERY_WEIGHT_COST: float = 0.25
-    RECOVERY_WEIGHT_AVAILABILITY: float = 0.15
-    MAX_RECOVERY_SEARCH_DAYS: int = 7
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

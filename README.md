@@ -1,22 +1,21 @@
 <!-- ========================================================================= -->
-<!-- 🖼️ THUMBNAIL / BANNER IMAGE AREA (EDIT PATH HERE)                          -->
-<!-- Replace 'docs/assets/banner.svg' below with your custom image path or URL: -->
-<!-- Example: <img src="docs/assets/banner.svg" alt="Banner" width="100%" />   -->
+<!-- 🖼️ THUMBNAIL / BANNER IMAGE AREA                                          -->
 <!-- ========================================================================= -->
 <div align="center">
-  <img src="docs/assets/banner.svg" alt="Machine-Day Composer — CHC Machinery Scheduling & Breakdown Recovery" width="100%" />
+  <img src="docs/assets/banner.svg" alt="KrishiNiyojak (कृषiniyojak) — Agricultural Machinery Scheduling & Breakdown Recovery" width="100%" />
 
+  <h2>🌾 KrishiNiyojak (कृषिनियोजक) — Machine-Day Composer</h2>
   <p align="center">
-    <strong>Agricultural Machinery-Day Scheduling & Breakdown-Recovery Platform for Custom Hiring Centres (CHCs)</strong>
+    <strong>Agricultural Machinery-Day Scheduling, Feasibility Engine & Breakdown-Recovery Platform for Custom Hiring Centres (CHCs)</strong>
   </p>
 
   <p align="center">
     <a href="#-operational-flowcharts"><img src="https://img.shields.io/badge/Architecture-Flowcharts-blue?style=flat-square" alt="Flowcharts" /></a>
-    <a href="#-working-features--capabilities"><img src="https://img.shields.io/badge/Working_Features-T01--T11_Verified-emerald?style=flat-square" alt="Features" /></a>
-    <a href="#-getting-started"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi" alt="FastAPI" /></a>
+    <a href="#-working-features--capabilities"><img src="https://img.shields.io/badge/Working_Features-T01--T12_Verified-emerald?style=flat-square" alt="Features" /></a>
+    <a href="#-api-endpoint-reference"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi" alt="FastAPI" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/SQLAlchemy-2.0+-red?style=flat-square&logo=sqlalchemy" alt="SQLAlchemy" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
-    <a href="#-getting-started"><img src="https://img.shields.io/badge/Tests-71_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
+    <a href="#-running-tests"><img src="https://img.shields.io/badge/Tests-78_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
   </p>
 </div>
 
@@ -24,9 +23,12 @@
 
 ## 📌 Project Overview
 
-**Machine-Day Composer** is an operational platform engineered for agricultural **Custom Hiring Centres (CHCs)**. It bridges the gap between regional farmer equipment demand and centralized agricultural machinery fleets. 
+**KrishiNiyojak** (Machine-Day Composer) is an enterprise-grade operational platform engineered for agricultural **Custom Hiring Centres (CHCs)**. It bridges the gap between regional farmer equipment demand and centralized agricultural machinery fleets (tractors, harvesters, rotavators, sprayers, seeders).
 
-The platform optimizes machine-day allocations, validates technical implement and horsepower compatibility, models rural transit travel time using geodesic distance estimation, and provides resilient breakdown recovery workflows to safeguard seasonal crop windows.
+The platform:
+1. **Validates Technical Compatibility:** Evaluates machine-to-implement horsepower thresholds, implements matching, and rural road transit travel times with Haversine distance.
+2. **Generates Candidate Schedules:** Automates non-destructive Earliest Deadline First (EDF) scheduling with intra-schedule collision avoidance and managerial sign-off gates.
+3. **Automates Breakdown Recovery:** Reacts immediately to field breakdowns, transitions machine status, blocks maintenance calendars, and calculates transparent, algorithmic customer priority scores (1–100) based on crop urgency and repair downtime.
 
 ---
 
@@ -59,7 +61,8 @@ flowchart TD
     InProgress --> BreakdownCheck{In-Field Breakdown?}:::engine
 
     BreakdownCheck -- Yes --> TriggerRecovery["🚨 Report Machine Breakdown<br/>Status: DISRUPTED & Trigger Recovery"]:::alert
-    TriggerRecovery --> Reschedule["🔄 Reallocate Replacement Asset / Reschedule"]:::chc
+    TriggerRecovery --> ImpactScoring["📊 Calculate Customer Priority Score<br/>GET /api/v1/breakdowns/{id}/impact"]:::alert
+    ImpactScoring --> Reschedule["🔄 Reallocate Replacement Asset / Reschedule"]:::chc
     Reschedule --> InProgress
 
     BreakdownCheck -- No --> Completion(["✅ Job Finished: Status COMPLETED"]):::engine
@@ -132,22 +135,21 @@ stateDiagram-v2
 
 ---
 
-## 🚀 Working Features & Capabilities (Verified T01–T14)
+## 🚀 Working Features & Capabilities (Verified T01–T12)
 
-The project includes an operational backend verified through automated pytest test suites and isolated database fixtures:
+The backend is fully operational and verified through automated pytest test suites (78 passing tests) and isolated database fixtures:
 
 | Module / Domain | Status | Key Implemented Features |
 |:---|:---:|:---|
-| **Identity & Auth (T06)** | ✅ Verified | Argon2id password hashing, short-lived JWT access tokens, opaque cryptographically random refresh tokens with SHA-256 hash storage, rotation, revocation, and role-based access control (`SUPERADMIN`, `CHC_MANAGER`, `RESOURCE_OWNER`, `OPERATOR`, `FARMER`). |
+| **Identity & Auth (T06)** | ✅ Verified | Argon2id password hashing, short-lived JWT access tokens (15m), opaque cryptographically random refresh tokens with SHA-256 hash storage (7d), rotation, revocation, and role-based access control (`SUPERADMIN`, `CHC_MANAGER`, `RESOURCE_OWNER`, `OPERATOR`, `FARMER`). |
 | **CHC & Resources (T07)** | ✅ Verified | Full CRUD and lifecycle management for Custom Hiring Centres, Fleet Machinery (tractors, harvesters, sprayers), Certified Operators (licenses, experience), and Agricultural Implements (rotavators, seeders). |
 | **Availability & Demand (T08)** | ✅ Verified | Farmer Service Request intake (GPS coordinates, crop type, acreage, requested date windows). Calendar slot tracking for machines and operators across `FULL_DAY`, `HALF_DAY_MORNING`, and `HALF_DAY_AFTERNOON` with conflict rejection. |
 | **Booking Lifecycle (T09)** | ✅ Verified | Conversion of approved requests into machine-day agreements, unique booking codes, conflict validation, role-scoped queries, cancellation workflows, and state-machine transitions. |
 | **Scheduling Feasibility (T10)** | ✅ Verified | Modular business engine evaluating compatibility without database side-effects (`POST /api/v1/scheduling/feasibility` & `GET /api/v1/scheduling/feasibility/{booking_id}`). Checks HP thresholds, availability slots, booking collisions, Haversine travel distance, road transit time, and operational radius limits. |
-| **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review (`GET /api/v1/schedules/{id}`), list (`GET /api/v1/schedules?chc_id=...`), non-destructive rejection (`POST /api/v1/schedules/{id}/reject`), and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
-| **Breakdown Impact & Customer Priority (T12)** | ✅ Verified | In-field breakdown incident reporting (`POST /api/v1/breakdowns` & `POST /api/v1/machines/{id}/breakdown`), machine status transition (`BROKEN_DOWN`), maintenance slot blocking, dependent booking identification (excluding cancelled/completed), status transition to `DISRUPTED`, and transparent customer priority scoring (1-100) based on deadline urgency, downtime, crop criticality, and acreage with explanatory rationales (`GET /api/v1/breakdowns/{id}/impact`). |
-| **Recovery Alternatives & Ranking (T13)** | ✅ Verified | Operational recovery alternative generation for disrupted bookings (`POST /api/v1/breakdowns/{id}/recovery-alternatives` & `GET /api/v1/breakdowns/{id}/recovery-alternatives`). Evaluates compatible CHC fleet machinery, horsepower, implement attachments, and operator availability via the T10 Feasibility Checker. Ranks candidates using a multi-factor score (Delay 35%, Transit 25%, Cost 25%, Availability 15%), penalizes deadline risks, provides root-cause failure diagnostics when no alternative exists, and generates non-destructive proposals (`RecoveryPlan` status `PROPOSED`) without mutating bookings. |
-| **Recovery Approval & Execution (T14)** | ✅ Verified | CHC-manager-authorized retrieval (`GET /api/v1/recovery-plans/{id}`), atomic approval & execution (`POST /api/v1/recovery-plans/{id}/approve`), and rejection (`POST /api/v1/recovery-plans/{id}/reject`). Live re-validates machinery/attachment compatibility, operator availability, booking conflicts, travel radius, and deadlines. Reassigns bookings to `SCHEDULED`, updates availability slots to `BOOKED`/`ASSIGNED`, transitions breakdown to `RECOVERING`, rolls back atomically on conflict (409), prevents duplicate approval (400), enforces CHC tenant isolation (403), records immutable AuditLogs, and queues dispatch notifications for farmers and operators. |
-| **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
+| **Schedule Generation & Approval (T11)** | ✅ Verified | Automated candidate schedule generation with Earliest Deadline First (EDF) matching and intra-schedule collision avoidance (`POST /api/v1/schedules/generate`). Review, list, non-destructive rejection, and transactional approval (`POST /api/v1/schedules/{id}/approve`) with live concurrency conflict detection (409) and audit logging. |
+| **Breakdown Impact & Customer Priority (T12)** | ✅ Verified | In-field breakdown incident reporting (`POST /api/v1/breakdowns`), machine status transition (`BROKEN_DOWN`), maintenance slot blocking, dependent booking identification, status transition to `DISRUPTED`, and transparent customer priority scoring (1-100) based on deadline urgency, downtime, crop criticality, and acreage with explanatory rationales (`GET /api/v1/breakdowns/{id}/impact`). |
+| **CORS & Frontend Readiness** | ✅ Verified | Native FastAPI `CORSMiddleware` configured in `app/main.py` allowing frontend connections from Vite (`5173`), React/Next.js (`3000`), and mobile development servers (`8080`). |
+| **Developer Tooling** | ✅ Verified | One-command PowerShell script ([run.ps1](run.ps1)) with dependency validation, automated `.env` handling, and non-blocking verification (`.\run.ps1 -CheckOnly`). |
 
 ---
 
@@ -162,7 +164,7 @@ The project includes an operational backend verified through automated pytest te
 │   ├── IMPLEMENTATION_CHECKLIST.md     # Production milestone verification checklist
 │   └── README.md
 ├── app/
-│   ├── main.py                         # FastAPI app entrypoint & global exception handlers
+│   ├── main.py                         # FastAPI app entrypoint, CORS & global exception handlers
 │   ├── api/
 │   │   ├── deps.py                     # Authentication & granular RBAC dependencies
 │   │   └── v1/
@@ -176,10 +178,9 @@ The project includes an operational backend verified through automated pytest te
 │   │       ├── bookings.py             # Operational booking lifecycle endpoints
 │   │       ├── scheduling.py           # Feasibility checking endpoints
 │   │       ├── schedules.py            # Schedule generation, review, approval & rejection
-│   │       ├── breakdowns.py           # Breakdown reporting & impact analysis endpoints
-│   │       └── recovery_plans.py       # Recovery plan retrieval, approval & rejection endpoints
+│   │       └── breakdowns.py           # Breakdown reporting & impact analysis endpoints
 │   ├── core/
-│   │   ├── config.py                   # Pydantic Settings & priority scoring weights
+│   │   ├── config.py                   # Pydantic Settings, CORS origins & scoring weights
 │   │   └── security.py                 # Argon2id hashing & JWT token issuance
 │   ├── db/
 │   │   ├── base.py                     # SQLAlchemy 2.x declarative Base
@@ -193,12 +194,16 @@ The project includes an operational backend verified through automated pytest te
 │   │   ├── recovery.py                 # Breakdowns, RecoveryPlans, Priorities
 │   │   └── supporting.py               # RefreshTokens, AuditLogs, Notifications
 │   ├── schemas/                        # Pydantic v2 schemas for all domains
-│   │   ├── recovery.py                 # Breakdown reporting and recovery execution models
-│   │   └── scheduling.py               # Feasibility and schedule proposal models
+│   │   ├── auth.py                     # Authentication & token schemas
+│   │   ├── chc.py                      # CHC schemas
+│   │   ├── resource.py                 # Machinery, operators & implements schemas
+│   │   ├── service_request.py          # Demand intake schemas
+│   │   ├── availability.py             # Shift & slot schemas
+│   │   ├── booking.py                  # Booking state machine schemas
+│   │   ├── scheduling.py               # Feasibility and schedule proposal models
+│   │   └── recovery.py                 # Breakdown reporting and impact analysis models
 │   └── services/
 │       ├── breakdown.py                # Breakdown reporting & customer priority scoring
-│       ├── recovery.py                 # Recovery alternative ranking & transactional approval
-│       ├── notification.py             # Notification persistence & dispatch abstraction
 │       ├── feasibility.py              # Modular scheduling rules & travel estimation
 │       ├── scheduler.py                # Candidate schedule generation & approval engine
 │       └── schedule_store.py           # Thread-safe in-memory schedule proposal registry
@@ -211,9 +216,7 @@ The project includes an operational backend verified through automated pytest te
 │   ├── test_bookings.py                # 8 Booking state machine & lifecycle tests
 │   ├── test_scheduling_feasibility.py  # 13 Feasibility checker & travel tests
 │   ├── test_scheduling_generation.py   # 8 Schedule generation & approval tests
-│   ├── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
-│   ├── test_recovery_ranking.py        # 6 Recovery alternative & ranking tests
-│   └── test_recovery_execution.py      # 9 Recovery plan approval & execution tests
+│   └── test_breakdown_impact.py        # 7 Breakdown reporting & customer priority tests
 ├── alembic/                            # Alembic database migrations
 ├── run.ps1                             # Automated PowerShell startup & test script
 ├── pyproject.toml                      # Project metadata & Python dependencies
@@ -227,8 +230,8 @@ The project includes an operational backend verified through automated pytest te
 ### Prerequisites
 
 - **Python 3.12 or newer** (tested on Python 3.14)
-- **PowerShell** (Windows PowerShell 5.1 or PowerShell Core 7+)
-- Optional: PostgreSQL / Supabase account for live database deployment
+- **PowerShell** (Windows) or **Bash** (Linux/macOS)
+- Optional: PostgreSQL / Supabase account for live database persistence
 
 ---
 
@@ -260,13 +263,28 @@ Once the application is running, open:
 
 ### Running Tests
 
-Execute the automated test suite:
+Execute the automated test suite (78 tests):
 
 ```powershell
-# Run all independent unit tests (84 tests)
-pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py tests/test_recovery_ranking.py -v
+# Run all independent unit tests
+pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py -v
 
 # Run code style & lint checks with Ruff
 ruff check .
 ruff format --check .
 ```
+
+---
+
+## 💻 Frontend Integration Guide
+
+1. **API Base URL:** Connect your HTTP client (Axios, Fetch, TanStack Query) to:
+   ```
+   http://127.0.0.1:8000/api/v1
+   ```
+2. **CORS:** Pre-configured in `app/main.py` for `http://localhost:3000`, `http://localhost:5173`, and `http://localhost:8080`.
+3. **Authentication Header:** Pass the JWT token on every protected route:
+   ```
+   Authorization: Bearer <access_token>
+   ```
+4. **Feasibility Dry-Run:** In the booking UI, call `POST /api/v1/scheduling/feasibility` before committing a booking to warn the user about horsepower deficits, route distance, or schedule conflicts.

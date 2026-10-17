@@ -1,8 +1,12 @@
 """FastAPI main application entrypoint."""
 
+from pathlib import Path
+
 import psycopg
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import OperationalError
 
 from app.api.deps import require_roles
@@ -25,6 +29,15 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Agricultural machinery scheduling and breakdown-recovery platform for CHCs",
+)
+
+# Enable CORS for frontend web and mobile clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -105,3 +118,10 @@ def protected_operator_endpoint(
         "status": "authorized",
         "message": f"Welcome, Operator {current_user.full_name}",
     }
+
+
+# Mount built frontend single-page application if dist exists
+frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+

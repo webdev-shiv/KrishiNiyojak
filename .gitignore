@@ -97,3 +97,6 @@ yarn-error.log*
 
 # Docker local overrides
 docker-compose.override.yml
+
+# Reference media
+video ref/

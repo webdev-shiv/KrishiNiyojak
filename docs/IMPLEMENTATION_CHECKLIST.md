@@ -86,16 +86,16 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T06: Authentication & Authorization
 - **Scope:**
-  - Argon2id password hashing and verification ([app/core/security.py](file:///e:/PROJECTS/hackshift/app/core/security.py)).
+  - Argon2id password hashing and verification ([app/core/security.py](../app/core/security.py)).
   - User registration (`POST /api/v1/auth/register`) with base 'FARMER' role; self-granting privileged roles is blocked.
   - User login (`POST /api/v1/auth/login`) with credential verification issuing JWT access tokens and opaque refresh tokens.
   - Short-lived JWT access tokens with configurable expiration, subject, and roles payload.
   - Cryptographically random opaque refresh tokens, storing only SHA-256 hashes in the database with rotation and revocation support.
   - Token refresh endpoint (`POST /api/v1/auth/refresh`) enforcing single-use rotation and invalidating old tokens.
   - Logout endpoint (`POST /api/v1/auth/logout`) explicitly revoking refresh tokens.
-  - Reusable FastAPI dependencies ([app/api/deps.py](file:///e:/PROJECTS/hackshift/app/api/deps.py)): `get_current_user`, `get_current_active_user`, and `require_roles`.
+  - Reusable FastAPI dependencies ([app/api/deps.py](../app/api/deps.py)): `get_current_user`, `get_current_active_user`, and `require_roles`.
   - Role-based authorization across system roles (`Role`, `UserRole`) and organizational roles (`CHCMembership`) supporting Farmer, CHC Manager, Resource Owner, Operator, and Superadmin.
-  - Unit test suite ([tests/test_auth.py](file:///e:/PROJECTS/hackshift/tests/test_auth.py)) covering hashing, token validation, refresh rotation, revocation, and RBAC.
+  - Unit test suite ([tests/test_auth.py](../tests/test_auth.py)) covering hashing, token validation, refresh rotation, revocation, and RBAC.
 - **Verification:**
   - Pytest suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py`): **PASS** (18 passed in 3.37s).
   - Ruff linter & formatter check: **PASS** (All checks passed, 34 files formatted).
@@ -104,11 +104,11 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] One-Command Run Setup (Windows PowerShell)
 - **Scope:**
-  - Automated root-level PowerShell startup script ([run.ps1](file:///e:/PROJECTS/hackshift/run.ps1)) verifying Python 3.12+, configuring `.venv`, installing dependencies on demand without redundant reinstallations, ensuring safe `.env` creation from template without overwriting existing configs, and launching Uvicorn.
+  - Automated root-level PowerShell startup script ([run.ps1](../run.ps1)) verifying Python 3.12+, configuring `.venv`, installing dependencies on demand without redundant reinstallations, ensuring safe `.env` creation from template without overwriting existing configs, and launching Uvicorn.
   - Added `-CheckOnly` switch parameter for non-blocking pre-flight checks and automated validation.
-  - Hardened backend startup in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py) with global exception handlers for `sqlalchemy.exc.OperationalError` and `psycopg.OperationalError` returning a clean HTTP 503 Service Unavailable when the database is offline, preventing unhandled crashes or false success claims.
+  - Hardened backend startup in [app/main.py](../app/main.py) with global exception handlers for `sqlalchemy.exc.OperationalError` and `psycopg.OperationalError` returning a clean HTTP 503 Service Unavailable when the database is offline, preventing unhandled crashes or false success claims.
   - Verified independent execution of `/health`, `/docs`, and `/redoc` without requiring an active live database.
-  - Enhanced [.env.example](file:///e:/PROJECTS/hackshift/.env.example) and [README.md](file:///e:/PROJECTS/hackshift/README.md) clearly distinguishing required database configurations from optional startup defaults.
+  - Enhanced [.env.example](../.env.example) and [README.md](../README.md) clearly distinguishing required database configurations from optional startup defaults.
 - **Verification:**
   - `.\run.ps1 -CheckOnly`: **PASS** (Detected Python 3.14, verified `.venv`, verified dependencies, detected `.env`, validated application imports).
   - Pytest independent suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py -v`): **PASS** (20 passed in 3.65s).
@@ -119,14 +119,14 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T07: Core Resource Management APIs
 - **Scope:**
-  - **CHC APIs ([app/api/v1/chcs.py](file:///e:/PROJECTS/hackshift/app/api/v1/chcs.py)):** Create, list (paginated, status filter), view, and update Custom Hiring Centre hubs. Manager auto-membership on creation.
-  - **Machine APIs ([app/api/v1/machines.py](file:///e:/PROJECTS/hackshift/app/api/v1/machines.py)):** Register, list (paginated, CHC/category/status filters), view, update, and deactivate/retire machinery assets. Unique registration number constraint enforcement.
-  - **Operator APIs ([app/api/v1/operators.py](file:///e:/PROJECTS/hackshift/app/api/v1/operators.py)):** Register, list, view, update, and deactivate certified operators. Automatic `OPERATOR` CHC membership association.
-  - **Attachment APIs ([app/api/v1/attachments.py](file:///e:/PROJECTS/hackshift/app/api/v1/attachments.py)):** Create, list, view, update, and deactivate implements/attachments. Unique code constraint enforcement.
-  - **Granular RBAC & Cross-CHC Isolation ([app/api/deps.py](file:///e:/PROJECTS/hackshift/app/api/deps.py)):** CHC Managers are strictly restricted to managing resources of their assigned CHC (`verify_chc_manager_access`). Resource owners can only manage their permitted assets (`verify_resource_management_access`). Unauthorized cross-CHC or cross-owner access is rejected with HTTP 403 Forbidden. Farmers are denied management access.
-  - **Pydantic Validation ([app/schemas/chc.py](file:///e:/PROJECTS/hackshift/app/schemas/chc.py), [app/schemas/resource.py](file:///e:/PROJECTS/hackshift/app/schemas/resource.py)):** Type checks, GPS coordinate validation, positive horsepower/rate validation, and paginated response models.
-  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI schema verified.
-  - **Unit Test Suite ([tests/test_resources.py](file:///e:/PROJECTS/hackshift/tests/test_resources.py)):** 14 tests covering all CRUD paths, cross-CHC manager rejection, duplicate constraints, and Pydantic validation errors.
+  - **CHC APIs ([app/api/v1/chcs.py](../app/api/v1/chcs.py)):** Create, list (paginated, status filter), view, and update Custom Hiring Centre hubs. Manager auto-membership on creation.
+  - **Machine APIs ([app/api/v1/machines.py](../app/api/v1/machines.py)):** Register, list (paginated, CHC/category/status filters), view, update, and deactivate/retire machinery assets. Unique registration number constraint enforcement.
+  - **Operator APIs ([app/api/v1/operators.py](../app/api/v1/operators.py)):** Register, list, view, update, and deactivate certified operators. Automatic `OPERATOR` CHC membership association.
+  - **Attachment APIs ([app/api/v1/attachments.py](../app/api/v1/attachments.py)):** Create, list, view, update, and deactivate implements/attachments. Unique code constraint enforcement.
+  - **Granular RBAC & Cross-CHC Isolation ([app/api/deps.py](../app/api/deps.py)):** CHC Managers are strictly restricted to managing resources of their assigned CHC (`verify_chc_manager_access`). Resource owners can only manage their permitted assets (`verify_resource_management_access`). Unauthorized cross-CHC or cross-owner access is rejected with HTTP 403 Forbidden. Farmers are denied management access.
+  - **Pydantic Validation ([app/schemas/chc.py](../app/schemas/chc.py), [app/schemas/resource.py](../app/schemas/resource.py)):** Type checks, GPS coordinate validation, positive horsepower/rate validation, and paginated response models.
+  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](../app/main.py); OpenAPI schema verified.
+  - **Unit Test Suite ([tests/test_resources.py](../tests/test_resources.py)):** 14 tests covering all CRUD paths, cross-CHC manager rejection, duplicate constraints, and Pydantic validation errors.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py -v`): **PASS** (34 passed in 5.69s).
   - Full pytest suite (`pytest -v`): 35 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -136,12 +136,12 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T08: Availability & Farmer Service Requests
 - **Scope:**
-  - **Farmer Service Requests ([app/api/v1/service_requests.py](file:///e:/PROJECTS/hackshift/app/api/v1/service_requests.py)):** Endpoints for submission (`POST`), scoped listing (`GET`), retrieval (`GET /{id}`), and modification/cancellation (`PUT /{id}`). Strict farmer ownership scoping (farmers only access their own requests). CHC Managers can view and approve/reject requests submitted to their managed hubs. Farmers cannot self-approve requests.
-  - **Machine Availability ([app/api/v1/availability.py](file:///e:/PROJECTS/hackshift/app/api/v1/availability.py)):** Endpoints for scheduling (`POST`), listing (`GET`), viewing (`GET /{id}`), updating (`PUT /{id}`), and deleting (`DELETE /{id}`) machine-day slots (`FULL_DAY`, `HALF_DAY_MORNING`, `HALF_DAY_AFTERNOON`). Enforces conflict detection to prevent overlapping or duplicate reservations. Enforces manager/owner authorization.
-  - **Operator Availability ([app/api/v1/availability.py](file:///e:/PROJECTS/hackshift/app/api/v1/availability.py)):** Endpoints for scheduling, listing, viewing, updating, and removing operator duty/leave slots. Supports operator self-scheduling and CHC manager scheduling with slot conflict rejection.
-  - **Pydantic Validation ([app/schemas/service_request.py](file:///e:/PROJECTS/hackshift/app/schemas/service_request.py), [app/schemas/availability.py](file:///e:/PROJECTS/hackshift/app/schemas/availability.py)):** Validates coordinates, positive acreage, date ordering (`end_date >= start_date`), and allowed slot types.
-  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI documentation confirmed operational.
-  - **Unit Test Suite ([tests/test_service_requests_and_availability.py](file:///e:/PROJECTS/hackshift/tests/test_service_requests_and_availability.py)):** 8 comprehensive tests verifying valid submission, date validation, cross-farmer isolation, manager approval, machine availability scheduling, conflict checks, and operator duty management.
+  - **Farmer Service Requests ([app/api/v1/service_requests.py](../app/api/v1/service_requests.py)):** Endpoints for submission (`POST`), scoped listing (`GET`), retrieval (`GET /{id}`), and modification/cancellation (`PUT /{id}`). Strict farmer ownership scoping (farmers only access their own requests). CHC Managers can view and approve/reject requests submitted to their managed hubs. Farmers cannot self-approve requests.
+  - **Machine Availability ([app/api/v1/availability.py](../app/api/v1/availability.py)):** Endpoints for scheduling (`POST`), listing (`GET`), viewing (`GET /{id}`), updating (`PUT /{id}`), and deleting (`DELETE /{id}`) machine-day slots (`FULL_DAY`, `HALF_DAY_MORNING`, `HALF_DAY_AFTERNOON`). Enforces conflict detection to prevent overlapping or duplicate reservations. Enforces manager/owner authorization.
+  - **Operator Availability ([app/api/v1/availability.py](../app/api/v1/availability.py)):** Endpoints for scheduling, listing, viewing, updating, and removing operator duty/leave slots. Supports operator self-scheduling and CHC manager scheduling with slot conflict rejection.
+  - **Pydantic Validation ([app/schemas/service_request.py](../app/schemas/service_request.py), [app/schemas/availability.py](../app/schemas/availability.py)):** Validates coordinates, positive acreage, date ordering (`end_date >= start_date`), and allowed slot types.
+  - **Router Integration:** All endpoints mounted under `/api/v1` in [app/main.py](../app/main.py); OpenAPI documentation confirmed operational.
+  - **Unit Test Suite ([tests/test_service_requests_and_availability.py](../tests/test_service_requests_and_availability.py)):** 8 comprehensive tests verifying valid submission, date validation, cross-farmer isolation, manager approval, machine availability scheduling, conflict checks, and operator duty management.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py -v`): **PASS** (42 passed in 6.53s).
   - Full pytest suite (`pytest -v`): 43 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -151,13 +151,13 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T09: Booking Lifecycle
 - **Scope:**
-  - **Booking Creation ([app/api/v1/bookings.py](file:///e:/PROJECTS/hackshift/app/api/v1/bookings.py)):** Endpoint (`POST /api/v1/bookings`) to create operational bookings from approved service requests. Enforces service request existence, `APPROVED` status, single active booking constraint (preventing duplicate bookings), CHC resource alignment (verifying that machines and operators belong to the request's CHC), and date window compliance.
+  - **Booking Creation ([app/api/v1/bookings.py](../app/api/v1/bookings.py)):** Endpoint (`POST /api/v1/bookings`) to create operational bookings from approved service requests. Enforces service request existence, `APPROVED` status, single active booking constraint (preventing duplicate bookings), CHC resource alignment (verifying that machines and operators belong to the request's CHC), and date window compliance.
   - **Booking Management & Retrieval:** Endpoints for role-scoped listing (`GET`), detailed retrieval (`GET /{id}`), and modification (`PUT /{id}`). Farmers are restricted to their own requests; operators access only assigned bookings; CHC Managers access bookings for their authorized hubs.
   - **Status Transition State Machine:** Enforces valid lifecycle state transitions across `PENDING`, `SCHEDULED`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, and `DISRUPTED`. Rejects invalid transitions or transitions from terminal states (`COMPLETED`, `CANCELLED`) with HTTP 400 Bad Request.
   - **Cancellation Lifecycle:** Dedicated cancellation endpoint (`POST /{id}/cancel`) supporting optional cancellation reasons. Enforces farmer and manager permissions and blocks cancellation of completed bookings.
-  - **Pydantic Schemas ([app/schemas/booking.py](file:///e:/PROJECTS/hackshift/app/schemas/booking.py)):** Models for creation, updates, cancellation, paginated listing, and detailed representation including implement attachments.
-  - **Router Integration:** Mounted under `/api/v1` in [app/main.py](file:///e:/PROJECTS/hackshift/app/main.py); OpenAPI documentation confirmed operational.
-  - **Unit Test Suite ([tests/test_bookings.py](file:///e:/PROJECTS/hackshift/tests/test_bookings.py)):** 8 comprehensive tests verifying successful booking creation, unapproved request rejection, duplicate booking prevention, date window checks, valid and terminal status transitions, cancellation lifecycle, cross-farmer isolation, and denial of direct farmer booking creation.
+  - **Pydantic Schemas ([app/schemas/booking.py](../app/schemas/booking.py)):** Models for creation, updates, cancellation, paginated listing, and detailed representation including implement attachments.
+  - **Router Integration:** Mounted under `/api/v1` in [app/main.py](../app/main.py); OpenAPI documentation confirmed operational.
+  - **Unit Test Suite ([tests/test_bookings.py](../tests/test_bookings.py)):** 8 comprehensive tests verifying successful booking creation, unapproved request rejection, duplicate booking prevention, date window checks, valid and terminal status transitions, cancellation lifecycle, cross-farmer isolation, and denial of direct farmer booking creation.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py -v`): **PASS** (50 passed in 11.75s).
   - Full pytest suite (`pytest -v`): 51 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -167,20 +167,20 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T10: Scheduling Rules & Feasibility Checker
 - **Scope:**
-  - **Modular Feasibility Service ([app/services/feasibility.py](file:///e:/PROJECTS/hackshift/app/services/feasibility.py)):** Dedicated business logic evaluating proposed machine-day assignments and existing bookings against operational constraints without modifying state or creating persistent records.
+  - **Modular Feasibility Service ([app/services/feasibility.py](../app/services/feasibility.py)):** Dedicated business logic evaluating proposed machine-day assignments and existing bookings against operational constraints without modifying state or creating persistent records.
   - **Machinery & Horsepower Compatibility:** Enforces that machine horsepower meets or exceeds maximum required horsepower threshold across all requested implements (`machine.horsepower >= attachment.required_hp_min`), flagging power deficits as blocking violations.
   - **Attachment Validation:** Verifies attachment existence, CHC ownership, and operational readiness (rejects `DAMAGED` or `MAINTENANCE` implements).
   - **Calendar Availability Slots:** Integrates with T08 `MachineAvailability` and `OperatorAvailability` to detect conflicts on target dates and slots (blocking on machine maintenance or operator leave).
   - **Active Booking Collisions:** Enforces cross-assignment collision prevention with active non-cancelled bookings (`Booking.status.notin_(["CANCELLED", "COMPLETED"])`) for both machinery and operators across `FULL_DAY`, `HALF_DAY_MORNING`, and `HALF_DAY_AFTERNOON` time slots.
   - **Operator Eligibility & Licensing:** Validates operator active duty status, license registration, and flags experience advisories.
-  - **Configurable Haversine Travel Estimation:** Calculates straight-line distance (km) and estimated road transit time (minutes) using configurable rural road winding factor (`ROAD_WINDING_FACTOR = 1.3`) and machinery transit speed (`TRANSIT_SPEED_KMH = 25.0 km/h`) from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py). Enforces CHC operational radius boundary (`operating_radius_km`).
+  - **Configurable Haversine Travel Estimation:** Calculates straight-line distance (km) and estimated road transit time (minutes) using configurable rural road winding factor (`ROAD_WINDING_FACTOR = 1.3`) and machinery transit speed (`TRANSIT_SPEED_KMH = 25.0 km/h`) from [app/core/config.py](../app/core/config.py). Enforces CHC operational radius boundary (`operating_radius_km`).
   - **Acreage, Date Window & Deadline Constraints:** Enforces scheduling within farmer's requested start date and deadline. Calculates estimated work duration and issues advisory warnings if work exceeds half-day slot capacity.
-  - **API Endpoints ([app/api/v1/scheduling.py](file:///e:/PROJECTS/hackshift/app/api/v1/scheduling.py)):**
+  - **API Endpoints ([app/api/v1/scheduling.py](../app/api/v1/scheduling.py)):**
     - `POST /api/v1/scheduling/feasibility` — Evaluates proposed assignments with zero persistent side effects.
     - `GET /api/v1/scheduling/feasibility/{booking_id}` — Evaluates an existing booking excluding self-collision.
   - **Granular RBAC & Tenant Isolation:** Farmers can only evaluate proposals linked to their own service requests and inspect their own bookings; CHC Managers are restricted to their managed hubs; cross-tenant access is rejected with HTTP 403 Forbidden.
-  - **Pydantic Schemas ([app/schemas/scheduling.py](file:///e:/PROJECTS/hackshift/app/schemas/scheduling.py)):** Structured schemas with explicit units (`distance_km`, `estimated_travel_time_minutes`, `machine_horsepower`, `acreage`, `estimated_work_duration_hours`, `slot_duration_hours`), blocking `reasons`, and advisory `warnings`.
-  - **Unit Test Suite ([tests/test_scheduling_feasibility.py](file:///e:/PROJECTS/hackshift/tests/test_scheduling_feasibility.py)):** 13 comprehensive tests covering calculations, slot overlap, horsepower compatibility, missing/cross-CHC implements, maintenance/leave blocking, booking collisions, deadline violations, radius bounds, capacity warnings, existing booking evaluation, and authorization.
+  - **Pydantic Schemas ([app/schemas/scheduling.py](../app/schemas/scheduling.py)):** Structured schemas with explicit units (`distance_km`, `estimated_travel_time_minutes`, `machine_horsepower`, `acreage`, `estimated_work_duration_hours`, `slot_duration_hours`), blocking `reasons`, and advisory `warnings`.
+  - **Unit Test Suite ([tests/test_scheduling_feasibility.py](../tests/test_scheduling_feasibility.py)):** 13 comprehensive tests covering calculations, slot overlap, horsepower compatibility, missing/cross-CHC implements, maintenance/leave blocking, booking collisions, deadline violations, radius bounds, capacity warnings, existing booking evaluation, and authorization.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py -v`): **PASS** (63 passed in 16.23s).
   - Full pytest suite (`pytest -v`): 64 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -190,21 +190,21 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T11: Schedule Generation & Manager Approval
 - **Scope:**
-  - **Schedule Generation Engine ([app/services/scheduler.py](file:///e:/PROJECTS/hackshift/app/services/scheduler.py)):** Automated scheduler matching eligible approved service requests and pending bookings to available CHC machinery, certified operators, and agricultural implements using the T10 Feasibility Checker. Employs Earliest Deadline First (EDF) prioritization.
+  - **Schedule Generation Engine ([app/services/scheduler.py](../app/services/scheduler.py)):** Automated scheduler matching eligible approved service requests and pending bookings to available CHC machinery, certified operators, and agricultural implements using the T10 Feasibility Checker. Employs Earliest Deadline First (EDF) prioritization.
   - **Intra-Schedule Collision Tracking:** Tracks tentative machine and operator assignments across dates and slots within a candidate plan, preventing double-allocation within the same schedule.
   - **Infeasible Demand Reporting:** Gathers and reports distinct blocking reasons in `unscheduled_jobs` (such as horsepower deficits, deadline breaches, or leave conflicts) without silently bypassing constraints.
-  - **Non-Destructive Candidate Proposals ([app/services/schedule_store.py](file:///e:/PROJECTS/hackshift/app/services/schedule_store.py)):** Generates `PROPOSED` schedules in a thread-safe registry with zero mutations to confirmed bookings or database state before manager sign-off.
+  - **Non-Destructive Candidate Proposals ([app/services/schedule_store.py](../app/services/schedule_store.py)):** Generates `PROPOSED` schedules in a thread-safe registry with zero mutations to confirmed bookings or database state before manager sign-off.
   - **Transactional Approval & Live Conflict Re-checking:** Re-verifies all candidate slots against live database availability during approval to detect concurrent booking conflicts (HTTP 409 Conflict). Atomically transitions operational bookings to `SCHEDULED`, updates/creates `MachineAvailability` and `OperatorAvailability` slots, records immutable `AuditLog` entries, and prevents duplicate approval or approval of rejected schedules (HTTP 400).
   - **Rejection Lifecycle:** Allows managers to reject proposed schedules with optional reasons, recording audit trails while leaving all operational bookings untouched.
-  - **CHC Manager Endpoints ([app/api/v1/schedules.py](file:///e:/PROJECTS/hackshift/app/api/v1/schedules.py)):**
+  - **CHC Manager Endpoints ([app/api/v1/schedules.py](../app/api/v1/schedules.py)):**
     - `POST /api/v1/schedules/generate` — Generate candidate machine-day schedule.
     - `GET /api/v1/schedules` — List candidate and approved schedules for a CHC.
     - `GET /api/v1/schedules/{schedule_id}` — Review candidate schedule details and feasibility metrics.
     - `POST /api/v1/schedules/{schedule_id}/approve` — Transactionally commit approved schedule assignments.
     - `POST /api/v1/schedules/{schedule_id}/reject` — Reject candidate schedule without modifying bookings.
   - **Granular RBAC & Tenant Isolation:** Exclusively accessible to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the specific CHC hub. Farmers and unauthorized managers receive HTTP 403 Forbidden.
-  - **Pydantic Schemas ([app/schemas/scheduling.py](file:///e:/PROJECTS/hackshift/app/schemas/scheduling.py)):** `CandidateAssignmentResponse`, `UnscheduledJobResponse`, `ScheduleGenerateRequest`, `ScheduleRejectRequest`, `ScheduleResponse`, `ScheduleSummaryResponse`.
-  - **Unit Test Suite ([tests/test_scheduling_generation.py](file:///e:/PROJECTS/hackshift/tests/test_scheduling_generation.py)):** 8 comprehensive tests covering automated generation, infeasible job reasons, existing booking avoidance, transactional approval, duplicate approval prevention, rejection workflow, concurrent conflict detection (409), and RBAC/cross-CHC isolation.
+  - **Pydantic Schemas ([app/schemas/scheduling.py](../app/schemas/scheduling.py)):** `CandidateAssignmentResponse`, `UnscheduledJobResponse`, `ScheduleGenerateRequest`, `ScheduleRejectRequest`, `ScheduleResponse`, `ScheduleSummaryResponse`.
+  - **Unit Test Suite ([tests/test_scheduling_generation.py](../tests/test_scheduling_generation.py)):** 8 comprehensive tests covering automated generation, infeasible job reasons, existing booking avoidance, transactional approval, duplicate approval prevention, rejection workflow, concurrent conflict detection (409), and RBAC/cross-CHC isolation.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py -v`): **PASS** (71 passed in 13.66s).
   - Full pytest suite (`pytest -v`): 72 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -214,24 +214,24 @@ This document tracks the execution, verification, and pass/fail status of tasks 
 
 ### [x] Task T12: Breakdown Impact Analysis & Customer Priority
 - **Scope:**
-  - **Breakdown Reporting Workflow ([app/services/breakdown.py](file:///e:/PROJECTS/hackshift/app/services/breakdown.py)):** In-field machinery failure incident reporting capturing failure type, severity (`LOW`, `MEDIUM`, `CRITICAL`), description, GPS location, reported timestamp, and affected booking linkage. Updates machine status to `BROKEN_DOWN` and future machine availability slots to `BLOCKED_MAINTENANCE`.
+  - **Breakdown Reporting Workflow ([app/services/breakdown.py](../app/services/breakdown.py)):** In-field machinery failure incident reporting capturing failure type, severity (`LOW`, `MEDIUM`, `CRITICAL`), description, GPS location, reported timestamp, and affected booking linkage. Updates machine status to `BROKEN_DOWN` and future machine availability slots to `BLOCKED_MAINTENANCE`.
   - **Affected Booking Identification:** Accurately queries all bookings dependent on the broken machine on or after the breakdown date (`scheduled_date >= breakdown_date`, `machine_id == machine.id`). Strictly excludes `CANCELLED` and `COMPLETED` bookings. Transitions affected active/scheduled bookings to `DISRUPTED`.
-  - **Configurable Customer Priority Scoring Engine:** Computes a transparent, deterministic priority score (1 to 100) using configurable weights from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py):
+  - **Configurable Customer Priority Scoring Engine:** Computes a transparent, deterministic priority score (1 to 100) using configurable weights from [app/core/config.py](../app/core/config.py):
     - **Deadline Urgency (40% weight):** Buffer days to farmer's deadline (`<=0` days: 40/36 pts; `1` day: 30 pts; `2` days: 22 pts; `3-4` days: 15 pts; `>=5` days: 8 pts; missing deadline default: 15 pts).
     - **Job Criticality (25% weight):** SOWING/PLANTING (25 pts), HARVESTING (23 pts), SPRAYING (20 pts), PLOWING (14 pts), OTHER (10 pts), unspecified default (12 pts).
     - **Delay Risk & Downtime (20% weight):** Evaluates estimated repair duration vs. buffer days; categorizes severity (`CRITICAL`: 20 pts, `MEDIUM`: 14 pts, `LOW`: 8 pts) and computes `delay_risk` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) and `missed_deadline_risk` (bool).
     - **Acreage Scale (15% weight):** `>=20` ac (15 pts), `10-20` ac (12 pts), `5-10` ac (9 pts), `<5` ac (6 pts), unspecified default (`DEFAULT_ACREAGE_BASELINE = 5.0` -> 9 pts).
   - **Transparent Explanations & Database Persistence:** Generates detailed `priority_reasons` for each factor, clearly documenting any defaults applied. Persists and updates `BookingPriority` records in the database.
   - **Priority Ordering & Summary Metrics:** Returns affected bookings sorted in descending order of priority score (tie-breaking on smaller buffer days and earlier date), alongside summary statistics (total affected jobs, breakdown of priority levels, missed deadline count, affected acreage).
-  - **API Endpoints ([app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py), [app/api/v1/machines.py](file:///e:/PROJECTS/hackshift/app/api/v1/machines.py)):**
+  - **API Endpoints ([app/api/v1/breakdowns.py](../app/api/v1/breakdowns.py), [app/api/v1/machines.py](../app/api/v1/machines.py)):**
     - `POST /api/v1/breakdowns` — Report breakdown and calculate impact analysis.
     - `POST /api/v1/machines/{machine_id}/breakdown` — Report breakdown specifically for a machine asset.
     - `GET /api/v1/breakdowns/{breakdown_id}/impact` — Retrieve impact analysis and customer priority queue.
     - `GET /api/v1/breakdowns/{breakdown_id}` — Get breakdown record details.
     - `GET /api/v1/breakdowns` — List reported breakdowns with CHC, machine, and status filters.
   - **Granular RBAC & Tenant Isolation:** Restricted to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the machine's CHC (`verify_chc_manager_access`). Farmers, operators, and unauthorized managers receive HTTP 403 Forbidden.
-  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):** `BreakdownCreateRequest`, `AffectedBookingImpact`, `BreakdownImpactResponse`, `BreakdownResponse`, `BreakdownPaginatedResponse`.
-  - **Unit Test Suite ([tests/test_breakdown_impact.py](file:///e:/PROJECTS/hackshift/tests/test_breakdown_impact.py)):** 7 comprehensive tests covering breakdown reporting, machine status updates, availability blocking, affected booking identification, cancellation/completion exclusions, transparent priority scoring and ordering, missing data defaults, and cross-CHC authorization.
+  - **Pydantic Schemas ([app/schemas/recovery.py](../app/schemas/recovery.py)):** `BreakdownCreateRequest`, `AffectedBookingImpact`, `BreakdownImpactResponse`, `BreakdownResponse`, `BreakdownPaginatedResponse`.
+  - **Unit Test Suite ([tests/test_breakdown_impact.py](../tests/test_breakdown_impact.py)):** 7 comprehensive tests covering breakdown reporting, machine status updates, availability blocking, affected booking identification, cancellation/completion exclusions, transparent priority scoring and ordering, missing data defaults, and cross-CHC authorization.
 - **Verification:**
   - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py -v`): **PASS** (78 passed in 14.50s).
   - Full pytest suite (`pytest -v`): 79 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
@@ -239,80 +239,11 @@ This document tracks the execution, verification, and pass/fail status of tasks 
   - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
 - **Status:** **PASS** (Completed & Verified)
 
-### [x] Task T13: Recovery Alternatives & Ranking
-- **Scope:**
-  - **Recovery Alternatives Generation Engine ([app/services/recovery.py](file:///e:/PROJECTS/hackshift/app/services/recovery.py)):** Evaluates candidate operational recovery options for bookings disrupted by machinery breakdowns. Searches compatible fleet machinery and certified operators within the Custom Hiring Centre (CHC).
-  - **Feasibility & Operational Constraints Integration:** Seamlessly leverages the T10 Feasibility Checker to verify implement horsepower thresholds, calendar availability slots, active booking collision avoidance, travel radius limits, and operator duty.
-  - **Multi-Factor Ranking Formula (0–100):** Evaluates and ranks alternatives using configurable weights from [app/core/config.py](file:///e:/PROJECTS/hackshift/app/core/config.py):
-    - **Expected Delay & Deadline Risk (35% weight):** Zero delay (same-day substitute: 35.0 pts); 1 day delay (28.0 pts); 2 days delay (20.0 pts); 3–4 days delay (14.0 pts); $\ge 5$ days delay (8.0 pts); missed farmer deadline (penalized to 2.0 pts with `missed_deadline=True`).
-    - **Travel Distance / Transit Time (25% weight):** $\le 5.0$ km (25.0 pts); $5.0–15.0$ km (20.0 pts); $15.0–25.0$ km (14.0 pts); $25.0$ km to CHC operating radius (8.0 pts); outside radius (0.0 pts).
-    - **Differential / Additional Cost (25% weight):** Cost neutral or cheaper (25.0 pts); $< 15\%$ premium (20.0 pts); $15–30\%$ premium (14.0 pts); $30–50\%$ premium (8.0 pts); $\ge 50\%$ premium (3.0 pts).
-    - **Resource Availability & Familiarity (15% weight):** Machine unreserved calendar slot (6.7 pts); original operator customer continuity (3.3 pts); alternative qualified operator (2.0 pts).
-  - **Root-Cause Failure Diagnostics:** Transparently identifies and reports primary blocking constraints when no feasible alternative exists (e.g. no machine with sufficient horsepower, all compatible machines booked/under maintenance, or deadline exceeded).
-  - **Zero Direct Booking Modifications:** Recommendations are non-destructive and strictly propose recovery options. Persists candidate plans into the existing `RecoveryPlan` model (`status = "PROPOSED"`) and `RecoveryPlanItem`s (`status = "PENDING"`) without modifying `Booking` or `Machine` records.
-  - **Documented Cross-CHC Limitation:** Cross-CHC resource borrowing is clearly documented in API responses and system documentation as restricted by single-CHC manager RBAC boundaries.
-  - **Manager-Only API Endpoints ([app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py)):**
-    - `POST /api/v1/breakdowns/{breakdown_id}/recovery-alternatives` — Evaluates, ranks, and creates candidate `RecoveryPlan` proposal.
-    - `GET /api/v1/breakdowns/{breakdown_id}/recovery-alternatives` — Retrieves evaluated recovery recommendations without database mutation.
-  - **Granular RBAC & Tenant Isolation:** Strictly accessible to `SUPERADMIN` and authorized `CHC_MANAGER` users managing the breakdown's CHC (`verify_chc_manager_access`). Farmers, operators, and unauthorized managers receive HTTP 403 Forbidden.
-  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):** `RecoveryAlternativeResponse`, `BookingRecoveryPlan`, `BreakdownRecoveryResponse`.
-  - **Unit Test Suite ([tests/test_recovery_ranking.py](file:///e:/PROJECTS/hackshift/tests/test_recovery_ranking.py)):** 6 comprehensive tests covering candidate generation, ranking score formulas, horsepower compatibility, slot conflict/maintenance avoidance, deadline penalties, no-alternative root cause reporting, and cross-CHC authorization.
-- **Verification:**
-  - Independent unit test suite (`pytest tests/test_auth.py tests/test_models.py tests/test_health.py tests/test_resources.py tests/test_service_requests_and_availability.py tests/test_bookings.py tests/test_scheduling_feasibility.py tests/test_scheduling_generation.py tests/test_breakdown_impact.py tests/test_recovery_ranking.py -v`): **PASS** (84 passed in 32.28s).
-  - Full pytest suite (`pytest -v`): 85 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
-  - Ruff linter & format check (`ruff check .` & `ruff format --check .`): **PASS** (0 errors, 64 files formatted).
-  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
-- **Status:** **PASS** (Completed & Verified)
-
-### [x] Task T14: Recovery Approval & Execution
-- **Scope:**
-  - **Recovery Plan Management Endpoints ([app/api/v1/recovery_plans.py](file:///e:/PROJECTS/hackshift/app/api/v1/recovery_plans.py), [app/api/v1/breakdowns.py](file:///e:/PROJECTS/hackshift/app/api/v1/breakdowns.py)):**
-    - `GET /api/v1/recovery-plans/{plan_id}` — Retrieve proposed recovery plan and items.
-    - `POST /api/v1/recovery-plans/{plan_id}/approve` — Approve and execute a proposed recovery plan.
-    - `POST /api/v1/recovery-plans/{plan_id}/reject` — Reject a proposed recovery plan without modifying bookings or resources.
-    - Breakdown-nested routes: `GET /api/v1/breakdowns/{id}/recovery-plans/{plan_id}`, `POST .../approve`, `POST .../reject`.
-  - **Live Re-Validation Engine ([app/services/recovery.py](file:///e:/PROJECTS/hackshift/app/services/recovery.py)):**
-    - Re-evaluates all assignments against live machinery compatibility, operator availability/duty, active booking collisions, CHC operating radius, transit time, and farmer deadlines via `evaluate_feasibility`.
-    - Detects stale alternatives or concurrent resource locking prior to execution, raising HTTP 409 Conflict with detailed failure reasons and recording `AuditLog` for the failed attempt.
-  - **Atomic Transactional Execution:**
-    - Atomically updates affected bookings: sets `machine_id` to replacement machine, `operator_id` to replacement operator, `scheduled_date` to target date, and `status` to `SCHEDULED`.
-    - Updates/creates `MachineAvailability` slots to `BOOKED` and `OperatorAvailability` slots to `ASSIGNED`.
-    - Updates plan items to `COMPLETED`, plan status to `EXECUTED` (`approved_by_id = current_user.id`), and breakdown status to `RECOVERING`.
-    - Wrapped in explicit database transaction with complete rollback on any error, ensuring zero partial mutations.
-  - **Rejection Workflow:**
-    - Transitions plan to `REJECTED` and items to `FAILED`.
-    - Preserves existing bookings and resource calendars in their original state.
-    - Records immutable `AuditLog` capturing manager rejection rationale.
-  - **Duplicate Approval & Invalid State Guards:**
-    - Prevents executing already executed plans (HTTP 400).
-    - Prevents approving rejected plans or rejecting executed plans (HTTP 400).
-  - **Granular RBAC & Tenant Isolation:**
-    - Strictly authorized for `SUPERADMIN` and CHC managers (`require_roles("SUPERADMIN", "CHC_MANAGER")`).
-    - Enforces CHC tenant isolation via `verify_chc_manager_access`; managers from foreign CHCs receive HTTP 403 Forbidden.
-  - **Immutable Audit Logging ([app/models/supporting.py](file:///e:/PROJECTS/hackshift/app/models/supporting.py)):**
-    - Creates `AuditLog` records for `APPROVE_RECOVERY_PLAN`, `REJECT_RECOVERY_PLAN`, and `FAILED_RECOVERY_APPROVAL`.
-    - Stores structured JSON payloads of `payload_before` and `payload_after` with booking IDs, previous/new machine assignments, actor ID, and IP address.
-  - **Notification Service Abstraction ([app/services/notification.py](file:///e:/PROJECTS/hackshift/app/services/notification.py)):**
-    - Clean notification service abstraction using existing `Notification` model.
-    - Queues dispatch records (`status = "PENDING"`) for affected farmers and assigned replacement operators.
-    - Documented that external mobile SMS (Twilio), Push (FCM), and Email (SendGrid) gateways are pending live integration.
-  - **Pydantic Schemas ([app/schemas/recovery.py](file:///e:/PROJECTS/hackshift/app/schemas/recovery.py)):**
-    - `RecoveryPlanItemResponse`, `RecoveryPlanResponse`, `RecoveryPlanRejectRequest`, `RecoveryPlanExecutionResponse`.
-  - **Unit Test Suite ([tests/test_recovery_execution.py](file:///e:/PROJECTS/hackshift/tests/test_recovery_execution.py)):**
-    - 9 comprehensive tests covering plan retrieval, successful execution, duplicate approval rejection, rejection workflow, approving rejected plan rejection, live conflict rollback, stale cancelled booking, cross-CHC tenant isolation (403), and nested breakdown routes.
-- **Verification:**
-  - Targeted unit test suite (`pytest tests/test_recovery_execution.py -v`): **PASS** (9 passed in 10.42s).
-  - Full pytest suite (`pytest -v`): 94 passed, 1 expected failure (`test_database_connectivity` fails due to unconfigured cloud database credentials, as designed).
-  - Ruff linter check (`ruff check .`): **PASS** (0 errors).
-  - Ruff format check (`ruff format --check .`): **PASS** (67 files formatted).
-  - Startup check (`.\run.ps1 -CheckOnly`): **PASS** (imports and configuration verified).
-- **Status:** **PASS** (Completed & Verified)
-
 ---
 
 ## Future Tasks (Pending Explicit Instruction)
 
-- [ ] **Task T15:** Next project milestone per roadmap
-
+- [ ] **Task T13:** Recovery Alternatives & Dynamic Rescheduling Workflows
+- [ ] **Task T14:** Mobile Client & Dispatch Notification Scaffolding
 
 

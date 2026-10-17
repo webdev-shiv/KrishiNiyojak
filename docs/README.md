@@ -4,8 +4,8 @@ This directory contains system architecture, design specifications, and implemen
 
 ## Documentation Index
 
-- [Architecture Specification (ARCHITECTURE.md)](file:///e:/PROJECTS/hackshift/docs/ARCHITECTURE.md): Comprehensive system design, modular monolith boundaries, entity models, lifecycles, recovery workflows, and unresolved business questions.
-- [Implementation Checklist (IMPLEMENTATION_CHECKLIST.md)](file:///e:/PROJECTS/hackshift/docs/IMPLEMENTATION_CHECKLIST.md): Step-by-step progress, verification evidence, and acceptance criteria across implementation phases.
+- [Architecture Specification (ARCHITECTURE.md)](ARCHITECTURE.md): Comprehensive system design, modular monolith boundaries, entity models, lifecycles, recovery workflows, and unresolved business questions.
+- [Implementation Checklist (IMPLEMENTATION_CHECKLIST.md)](IMPLEMENTATION_CHECKLIST.md): Step-by-step progress, verification evidence, and acceptance criteria across implementation phases.
 
 ## Planned Documentation Structure
 
