@@ -78,6 +78,9 @@ class ServiceRequestResponse(BaseModel):
     requested_end_date: date
     estimated_cost: Decimal
     status: str
+    selected_machine_id: int | None = None
+    selected_date: date | None = None
+    selected_slot: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -91,3 +94,68 @@ class ServiceRequestPaginatedResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class MachineOptionAttachment(BaseModel):
+    """Attachment details included with machine option."""
+
+    id: int
+    name: str
+    code: str
+    category: str
+    required_hp_min: float
+    hourly_rate: Decimal
+
+
+class MachineOptionSlot(BaseModel):
+    """Available operational date and slot with operator."""
+
+    date: date
+    slot: str
+    operator_id: int
+    operator_name: str
+
+
+class MachineOption(BaseModel):
+    """Comprehensive machine option evaluated for farmer selection."""
+
+    machine_id: int
+    make: str
+    model: str
+    category: str
+    horsepower: float
+    registration_number: str
+    working_speed_kmh: float
+    coverage_width_m: float
+    field_efficiency_factor: float
+    effective_capacity_ha_per_hour: float
+    estimated_duration_hours: float
+    hourly_rate: Decimal
+    estimated_total_cost: Decimal
+    compatible_attachments: list[MachineOptionAttachment] = Field(default_factory=list)
+    available_slots: list[MachineOptionSlot] = Field(default_factory=list)
+    feasible: bool = True
+    reasons: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    is_selected: bool = False
+
+
+class MachineOptionsResponse(BaseModel):
+    """Response containing all evaluated machine options for a service request."""
+
+    service_request_id: int
+    chc_id: int
+    operation_type: str
+    acreage: float
+    field_area_ha: float
+    options: list[MachineOption]
+
+
+class MachineSelectionRequest(BaseModel):
+    """Payload for farmer selecting their preferred machine option."""
+
+    machine_id: int = Field(..., description="Chosen machine ID")
+    selected_date: date | None = Field(None, description="Preferred operational date")
+    selected_slot: str | None = Field("FULL_DAY", description="Preferred slot (FULL_DAY, HALF_DAY_MORNING, HALF_DAY_AFTERNOON)")
+    selected_attachment_ids: list[int] | None = Field(None, description="Optional chosen attachments")
+

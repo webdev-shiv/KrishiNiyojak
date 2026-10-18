@@ -1,0 +1,21 @@
+{
+  "name": "niti-platform",
+  "version": "1.0.0",
+  "description": "NITI - Voice-First Agricultural Machinery Scheduling & Management Platform",
+  "scripts": {
+    "start": "python run.py",
+    "dev": "python run.py",
+    "build": "npm --prefix frontend run build",
+    "test": "uv run pytest --ignore=tests/test_database.py"
+  },
+  "keywords": [
+    "agriculture",
+    "voice-assistant",
+    "chc",
+    "machinery-scheduling",
+    "fastapi",
+    "react"
+  ],
+  "author": "NITI Team",
+  "license": "MIT"
+}

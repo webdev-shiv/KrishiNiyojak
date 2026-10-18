@@ -82,9 +82,22 @@ class FeasibilityConstraintDetails(BaseModel):
 
     # Job Duration & Capacity metrics
     acreage: float | None = Field(None, description="Target field operational area in acres")
+    field_area_ha: float | None = Field(None, description="Field area converted to hectares")
+    working_speed_kmh: float | None = Field(None, description="Machinery operational speed in km/h")
+    coverage_width_m: float | None = Field(None, description="Implement operational coverage width in meters")
+    field_efficiency_factor: float | None = Field(None, description="Field operational efficiency factor (0.0 to 1.0)")
+    effective_capacity_ha_per_hour: float | None = Field(
+        None, description="Calculated effective field capacity in hectares per hour"
+    )
+    setup_duration_hours: float | None = Field(
+        None, description="Setup, turning buffer, and calibration overhead in hours"
+    )
     estimated_work_duration_hours: float | None = Field(
         None,
         description="Estimated field work duration in hours based on acreage and rate model",
+    )
+    total_job_duration_hours: float | None = Field(
+        None, description="Total duration including transit, setup, and fieldwork in hours"
     )
     slot_duration_hours: float | None = Field(
         None,

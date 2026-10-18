@@ -26,8 +26,8 @@ export default function FaqSection({ lang }) {
 
           <p className="section-subtitle" style={{ margin: '0 auto' }}>
             {lang === 'en'
-              ? 'Everything you need to know about renting or listing farm equipment on AgriLink.'
-              : 'एग्रीलिंक पर ट्रैक्टर किराए पर लेने और अपनी मशीन लिस्ट करने से जुड़ी सभी ज़रूरी जानकारियां।'}
+              ? 'Everything you need to know about renting or listing farm equipment on NITI.'
+              : 'नीति (NITI) पर ट्रैक्टर किराए पर लेने और अपनी मशीन लिस्ट करने से जुड़ी सभी ज़रूरी जानकारियां।'}
           </p>
         </div>
 

@@ -44,8 +44,8 @@ export default function BenefitsSection({ lang, onListClick }) {
     {
       title: { en: 'Direct Cash Payments, Zero Commission', hi: 'पूरी कमाई सीधे आपके हाथ में' },
       desc: {
-        en: 'AgriLink takes 0% cut. Receive 100% of your rental payment directly from the farmer via UPI or cash.',
-        hi: 'एग्रीलिंक 0% कमीशन लेता है। किसान से पूरा किराया सीधे आपके बैंक खाते या नकद में प्राप्त करें।'
+        en: 'NITI takes 0% cut. Receive 100% of your rental payment directly from the farmer via UPI or cash.',
+        hi: 'नीति (NITI) 0% कमीशन लेता है। किसान से पूरा किराया सीधे आपके बैंक खाते या नकद में प्राप्त करें।'
       }
     },
     {
@@ -81,8 +81,8 @@ export default function BenefitsSection({ lang, onListClick }) {
 
           <p className="section-subtitle" style={{ margin: '0 auto' }}>
             {lang === 'en'
-              ? 'Whether you need equipment to cultivate your field or own a tractor with spare capacity, AgriLink empowers you.'
-              : 'चाहे आपको खेत जोतने के लिए मशीन चाहिए या आपके पास ट्रैक्टर है — एग्रीलिंक दोनों को जोड़कर समृद्धि लाता है।'}
+              ? 'Whether you need equipment to cultivate your field or own a tractor with spare capacity, NITI empowers you.'
+              : 'चाहे आपको खेत जोतने के लिए मशीन चाहिए या आपके पास ट्रैक्टर है — नीति (NITI) दोनों को जोड़कर समृद्धि लाता है।'}
           </p>
         </div>
 

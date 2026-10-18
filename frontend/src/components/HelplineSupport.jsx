@@ -111,7 +111,7 @@ export default function HelplineSupport({ lang }) {
 
               {/* WhatsApp Card */}
               <a
-                href="https://wa.me/919876543210?text=Namaste%20AgriLink%20I%20need%20tractor%20rental%20help"
+                href="https://wa.me/919876543210?text=Namaste%20NITI%20I%20need%20tractor%20rental%20help"
                 target="_blank"
                 rel="noreferrer"
                 style={{

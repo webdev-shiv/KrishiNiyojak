@@ -42,9 +42,19 @@ def test_docs_and_openapi_registered() -> None:
 
 def test_unreachable_database_returns_503() -> None:
     """Verify that a database operation returns clear HTTP 503 if the database is offline."""
-    response = client.post(
-        "/api/v1/auth/login",
-        json={"email": "nobody@example.com", "password": "DummyPassword123!"},
-    )
-    assert response.status_code == 503
-    assert "Database connection failed" in response.json()["detail"]
+    from sqlalchemy.exc import OperationalError
+    from app.db.session import get_db
+
+    def mock_broken_get_db():
+        raise OperationalError("Connection refused", {}, Exception("Database offline"))
+
+    app.dependency_overrides[get_db] = mock_broken_get_db
+    try:
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "nobody@example.com", "password": "DummyPassword123!"},
+        )
+        assert response.status_code == 503
+        assert "Database connection failed" in response.json()["detail"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)

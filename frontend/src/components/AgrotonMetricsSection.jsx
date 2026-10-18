@@ -42,7 +42,7 @@ export default function AgrotonMetricsSection() {
             </h2>
 
             <p className="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl">
-              KrishiNiyojak bridges the gap between smallholder farmer seasonal demand and centralized machinery fleets.
+              NITI bridges the gap between smallholder farmer seasonal demand and centralized machinery fleets.
               Through automated EDF scheduling algorithms and geodesic transit modeling, we protect vulnerable crop windows from seasonal machinery deficits.
             </p>
 
@@ -80,7 +80,7 @@ export default function AgrotonMetricsSection() {
                 </span>
                 <h4 className="text-xl font-bold font-display">Shri Rameshwar Patel</h4>
                 <p className="text-xs text-slate-200 mt-1">
-                  "Saved 48 hours of sowing time during unseasonal rains thanks to KrishiNiyojak's instant tractor reassignment."
+                  "Saved 48 hours of sowing time during unseasonal rains thanks to NITI's instant tractor reassignment."
                 </p>
               </div>
             </div>

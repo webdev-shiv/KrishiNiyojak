@@ -1,6 +1,7 @@
 import React from 'react';
 import { BadgePercent, Users2, Scale, Tractor, CheckCircle, Award } from 'lucide-react';
-import { trustHighlights, platformCounters } from '../data/agriData';
+import { trustHighlights } from '../data/agriData';
+import { analyticsService } from '../api/supabaseService';
 
 export default function TrustStrip({ lang }) {
   const iconMap = {
@@ -9,6 +10,57 @@ export default function TrustStrip({ lang }) {
     Scale: <Scale size={32} style={{ color: '#1B5E20' }} />,
     Tractor: <Tractor size={32} style={{ color: '#1B5E20' }} />,
   };
+
+  const [liveStats, setLiveStats] = React.useState({
+    centres: 0,
+    machines: 0,
+    farmers: 0,
+    bookings: 0,
+    loading: true,
+  });
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadStats() {
+      try {
+        const overview = await analyticsService.getChcOverview();
+        if (isMounted) {
+          setLiveStats({
+            centres: overview?.centres_count || 0,
+            machines: overview?.machinery_count || 0,
+            farmers: overview?.farmers_count || 0,
+            bookings: overview?.bookings_count || 0,
+            loading: false,
+          });
+        }
+      } catch (e) {
+        if (isMounted) {
+          setLiveStats(prev => ({ ...prev, loading: false }));
+        }
+      }
+    }
+    loadStats();
+    return () => { isMounted = false; };
+  }, []);
+
+  const counters = [
+    {
+      value: liveStats.loading ? '...' : `${liveStats.centres}`,
+      label: { en: 'Verified CHC Centres', hi: 'सत्यापित सीएचसी केंद्र' },
+    },
+    {
+      value: liveStats.loading ? '...' : `${liveStats.machines}`,
+      label: { en: 'Registered Machines', hi: 'पंजीकृत कृषि मशीनें' },
+    },
+    {
+      value: liveStats.loading ? '...' : `${liveStats.farmers}`,
+      label: { en: 'Connected Farmers', hi: 'जुड़े हुए किसान' },
+    },
+    {
+      value: liveStats.loading ? '...' : `${liveStats.bookings}`,
+      label: { en: 'Total Bookings', hi: 'कुल बुकिंग्स' },
+    },
+  ];
 
   return (
     <section style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E0E0D8' }}>
@@ -73,7 +125,7 @@ export default function TrustStrip({ lang }) {
         </div>
       </div>
 
-      {/* Live Impact Counters Strip (Wheat / Forest Tone) */}
+      {/* Live Impact Counters Strip — Real Supabase Queries */}
       <div style={{ backgroundColor: '#FAFAF5', borderTop: '1px solid #E0E0D8', borderBottom: '1px solid #E0E0D8', padding: '2rem 1rem' }}>
         <div className="container">
           <div
@@ -84,7 +136,7 @@ export default function TrustStrip({ lang }) {
               textAlign: 'center'
             }}
           >
-            {platformCounters.map((counter, idx) => (
+            {counters.map((counter, idx) => (
               <div key={idx} style={{ padding: '0.5rem' }}>
                 <div
                   style={{
@@ -99,7 +151,7 @@ export default function TrustStrip({ lang }) {
                   {counter.value}
                 </div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#555555' }}>
-                  {counter.label[lang]}
+                  {counter.label[lang] || counter.label.en}
                 </div>
               </div>
             ))}

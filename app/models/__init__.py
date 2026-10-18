@@ -4,6 +4,13 @@ from app.models.availability import MachineAvailability, OperatorAvailability
 from app.models.booking import Booking, BookingAttachment, ServiceRequest
 from app.models.chc import CHC, CHCMembership
 from app.models.identity import Role, User, UserRole
+from app.models.niti_extensions import (
+    BookingStatusEvent,
+    FarmerProfile,
+    OperatorProfile,
+    OTPVerification,
+    RatingReview,
+)
 from app.models.recovery import (
     BookingPriority,
     MachineBreakdown,
@@ -42,4 +49,10 @@ __all__ = [
     "AuditLog",
     "Notification",
     "RefreshToken",
+    # NITI Extensions
+    "FarmerProfile",
+    "OperatorProfile",
+    "BookingStatusEvent",
+    "RatingReview",
+    "OTPVerification",
 ]

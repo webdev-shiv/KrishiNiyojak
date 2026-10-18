@@ -1,30 +1,63 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, Tractor, MapPin, Calendar, Clock, Phone, ShieldCheck, IndianRupee } from 'lucide-react';
+import { X, CheckCircle2, Tractor, MapPin, Calendar, Clock, Phone, ShieldCheck, IndianRupee, Loader2 } from 'lucide-react';
+import { bookingsService } from '../api/supabaseService';
 
-export default function BookingModal({ isOpen, onClose, equipment, lang }) {
+export default function BookingModal({ isOpen, onClose, equipment, lang, onBookingCreated }) {
   const [hoursOrAcres, setHoursOrAcres] = useState(4);
-  const [bookingDate, setBookingDate] = useState('2026-10-22');
+  const [bookingDate, setBookingDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [farmerName, setFarmerName] = useState('');
   const [farmerPhone, setFarmerPhone] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [confirmedRecord, setConfirmedRecord] = useState(null);
 
   if (!isOpen || !equipment) return null;
 
-  // Calculate estimated total
-  const rateNumeric = parseInt(equipment.rate.replace(/[^0-9]/g, '')) || 600;
-  const estimatedTotal = rateNumeric * hoursOrAcres;
+  // Calculate estimated total from real machine rate (no fabricated default)
+  const rateNumeric = typeof equipment.rate === 'number' 
+    ? equipment.rate 
+    : (parseInt(String(equipment.rate).replace(/[^0-9]/g, '')) || 0);
+  const estimatedTotal = rateNumeric > 0 ? rateNumeric * hoursOrAcres : 0;
 
-  const handleConfirm = (e) => {
+  const handleConfirm = async (e) => {
     e.preventDefault();
+    setErrorMsg(null);
+
     if (!farmerName || !farmerPhone) {
-      alert(lang === 'en' ? 'Please fill your name and mobile number' : 'कृपया अपना नाम और मोबाइल नंबर भरें');
+      setErrorMsg(lang === 'en' ? 'Please fill your name and mobile number' : 'कृपया अपना नाम और मोबाइल नंबर भरें');
       return;
     }
-    setConfirmed(true);
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        machine_id: equipment.id,
+        centre_id: equipment.centre_id,
+        operation: equipment.category ? `${equipment.category.toUpperCase()} OPERATION` : 'AGRICULTURAL_WORK',
+        farm_area: hoursOrAcres,
+        field_location: equipment.village ? `${equipment.village}, ${equipment.district}` : equipment.district,
+        scheduled_date: bookingDate,
+        total_price: estimatedTotal,
+        rate_per_unit: rateNumeric,
+        special_instructions: `Farmer: ${farmerName}, Mobile: ${farmerPhone}`
+      };
+
+      const result = await bookingsService.createBooking(payload);
+      setConfirmedRecord(result);
+      if (onBookingCreated) {
+        onBookingCreated(result);
+      }
+    } catch (err) {
+      console.error('[BookingModal] Booking failed:', err);
+      setErrorMsg(err.message || 'Failed to persist booking in database.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
-    setConfirmed(false);
+    setConfirmedRecord(null);
+    setErrorMsg(null);
     onClose();
   };
 
@@ -75,29 +108,30 @@ export default function BookingModal({ isOpen, onClose, equipment, lang }) {
         {/* Modal Body */}
         <div style={{ padding: '1.5rem' }}>
           
-          {confirmed ? (
+          {confirmedRecord ? (
             <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
               <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#E8F5E9', color: '#1B5E20', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
                 <CheckCircle2 size={36} />
               </div>
               <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 900, color: '#1B5E20', marginBottom: '0.5rem' }}>
-                {lang === 'en' ? 'Booking Confirmed with Owner!' : 'मशीन मालिक के पास बुकिंग दर्ज हुई!'}
+                {lang === 'en' ? 'Booking Confirmed in Supabase!' : 'डेटाबेस में बुकिंग दर्ज हुई!'}
               </h4>
               <p style={{ color: '#555555', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
                 {lang === 'en'
-                  ? `Booking code #AGRI-${Math.floor(1000 + Math.random() * 9000)} created. The equipment owner ${equipment.ownerName} has been alerted and will coordinate arrival.`
-                  : `बुकिंग कोड #AGRI-${Math.floor(1000 + Math.random() * 9000)} बन गया है। मशीन मालिक ${equipment.ownerName} को सूचना भेज दी गई है।`}
+                  ? `Booking reference #${confirmedRecord.booking_reference} has been saved to public.bookings. The centre coordinator has received this live dispatch.`
+                  : `बुकिंग संदर्भ #${confirmedRecord.booking_reference} डेटाबेस में दर्ज हो गया है। केंद्र समन्वयक को सूचना प्राप्त हो गई है।`}
               </p>
 
-              {/* Direct Phone Call Button */}
-              <a
-                href={`tel:${equipment.ownerPhone}`}
-                className="btn btn-secondary"
-                style={{ width: '100%', marginBottom: '0.75rem' }}
-              >
-                <Phone size={18} />
-                <span>{lang === 'en' ? `Call Owner Directly: ${equipment.ownerPhone}` : `सीधे मालिक को कॉल करें: ${equipment.ownerPhone}`}</span>
-              </a>
+              {equipment.centres?.contact_phone && (
+                <a
+                  href={`tel:${equipment.centres.contact_phone}`}
+                  className="btn btn-secondary"
+                  style={{ width: '100%', marginBottom: '0.75rem' }}
+                >
+                  <Phone size={18} />
+                  <span>{lang === 'en' ? `Call Centre Coordinator: ${equipment.centres.contact_phone}` : `केंद्र समन्वयक को कॉल करें: ${equipment.centres.contact_phone}`}</span>
+                </a>
+              )}
 
               <button
                 onClick={handleClose}
@@ -112,22 +146,29 @@ export default function BookingModal({ isOpen, onClose, equipment, lang }) {
               {/* Selected Equipment Summary Card */}
               <div style={{ display: 'flex', gap: '1rem', backgroundColor: '#FAFAF5', padding: '1rem', borderRadius: '16px', border: '1px solid #E0E0D8', marginBottom: '1.25rem' }}>
                 <img
-                  src={equipment.image}
+                  src={equipment.image_url || '/assets/card-e.jpg'}
                   alt={equipment.name}
                   style={{ width: '90px', height: '80px', borderRadius: '12px', objectFit: 'cover' }}
+                  onError={(e) => { e.target.src = '/assets/card-e.jpg'; }}
                 />
                 <div>
                   <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1B5E20', margin: '0 0 0.2rem 0' }}>
-                    {lang === 'en' ? equipment.name : equipment.nameHi}
+                    {equipment.name}
                   </h4>
                   <div style={{ fontSize: '0.8rem', color: '#555555' }}>
-                    📍 {equipment.village}, {equipment.district}
+                    📍 {equipment.village ? `${equipment.village}, ` : ''}{equipment.district}
                   </div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1B5E20', marginTop: '0.35rem' }}>
-                    {equipment.rate} / {equipment.unit} • {equipment.fuelIncluded}
+                    ₹{rateNumeric} / {equipment.rate_unit || 'Hour'} • {equipment.fuel_included ? 'Fuel Included' : 'Self Fuel'}
                   </div>
                 </div>
               </div>
+
+              {errorMsg && (
+                <div style={{ padding: '0.75rem 1rem', backgroundColor: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '12px', color: '#C62828', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  {errorMsg}
+                </div>
+              )}
 
               {/* Form */}
               <form onSubmit={handleConfirm}>
@@ -150,7 +191,7 @@ export default function BookingModal({ isOpen, onClose, equipment, lang }) {
 
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#555555', marginBottom: '0.25rem' }}>
-                        {lang === 'en' ? `Estimated ${equipment.unit}s *` : `अनुमानित ${equipment.unitHi} *`}
+                        {lang === 'en' ? `Estimated ${equipment.rate_unit || 'Hour'}s *` : `अनुमानित ${equipment.rate_unit || 'घंटा'} *`}
                       </label>
                       <input
                         type="number"
@@ -206,17 +247,19 @@ export default function BookingModal({ isOpen, onClose, equipment, lang }) {
                       </div>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#1B5E20', fontWeight: 700, textAlign: 'right' }}>
-                      ✓ 0% Platform Commission<br />(सीधे मालिक को देय)
+                      ✓ Supabase Persisted<br />(0% Commission)
                     </div>
                   </div>
 
                   {/* Submit Button */}
                   <button
                     type="submit"
+                    disabled={submitting}
                     className="btn btn-primary"
-                    style={{ width: '100%', height: '48px', fontSize: '1rem', marginTop: '0.5rem' }}
+                    style={{ width: '100%', height: '48px', fontSize: '1rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                   >
-                    <span>{lang === 'en' ? 'Confirm Booking (No Advance Needed)' : 'बुकिंग पक्की करें (अग्रिम राशि शून्य)'}</span>
+                    {submitting && <Loader2 size={18} className="animate-spin" />}
+                    <span>{submitting ? 'Persisting to Database...' : (lang === 'en' ? 'Confirm Booking to Supabase' : 'बुकिंग पक्की करें')}</span>
                   </button>
 
                 </div>

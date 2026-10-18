@@ -1,11 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, Building2, Tractor, CheckCircle2, ArrowRight, Globe } from 'lucide-react';
 import { statesCoverage } from '../data/agriData';
+import { centresService, machineryService } from '../api/supabaseService';
 
 export default function InteractiveMap({ lang, onSelectStateFilter }) {
-  const [activeStateName, setActiveStateName] = useState('Madhya Pradesh');
+  const [activeStateName, setActiveStateName] = useState('Uttar Pradesh');
+  const [liveUpData, setLiveUpData] = useState(null);
 
-  const activeState = statesCoverage.find(s => s.name === activeStateName) || statesCoverage[0];
+  useEffect(() => {
+    async function loadUpMetrics() {
+      try {
+        const centres = await centresService.getAllCentres();
+        const districts = [...new Set(centres.map(c => c.district).filter(Boolean))];
+        setLiveUpData({
+          hubCount: centres.length,
+          districts: districts.length > 0 ? districts : ['Aligarh', 'Meerut', 'Agra', 'Bareilly', 'Lucknow', 'Sitapur', 'Varanasi', 'Gorakhpur', 'Jhansi'],
+        });
+      } catch (e) {
+        console.warn('Failed to load live UP centres:', e);
+      }
+    }
+    loadUpMetrics();
+  }, []);
+
+  const baseState = statesCoverage.find(s => s.name === activeStateName) || statesCoverage[1] || statesCoverage[0];
+  const activeState = (activeStateName === 'Uttar Pradesh' && liveUpData)
+    ? {
+        ...baseState,
+        hubCount: liveUpData.hubCount,
+        districts: liveUpData.districts,
+      }
+    : baseState;
 
   return (
     <section id="states" className="section-py" style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E0E0D8' }}>

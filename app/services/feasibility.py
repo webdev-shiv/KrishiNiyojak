@@ -10,11 +10,15 @@ machine-day assignment is operationally viable across:
 - Farmer requested date window, deadline, acreage, and slot capacity constraints
 """
 
+import logging
 import math
 from datetime import date
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 from app.models.availability import MachineAvailability, OperatorAvailability
@@ -38,6 +42,37 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     )
     c = 2.0 * math.asin(math.sqrt(max(0.0, min(1.0, a))))
     return round(earth_radius_km * c, 2)
+
+
+def calculate_road_route_distance(
+    lat1: float, lon1: float, lat2: float, lon2: float
+) -> tuple[float, float, bool]:
+    """Calculate actual road distance (km) and travel duration (minutes) using real routing provider (OSRM).
+
+    Returns (distance_km, travel_time_minutes, is_real_route).
+    Gracefully falls back to haversine + road winding factor on network error or invalid coordinates.
+    """
+    if not settings.ENABLE_REAL_ROUTING:
+        h_dist = calculate_haversine_distance(lat1, lon1, lat2, lon2)
+        return h_dist, estimate_travel_time_minutes(h_dist), False
+
+    try:
+        url = f"{settings.ROUTING_SERVICE_URL}/{lon1},{lat1};{lon2},{lat2}?overview=false"
+        with httpx.Client(timeout=settings.ROUTING_TIMEOUT_SECONDS) as client:
+            resp = client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("code") == "Ok" and data.get("routes"):
+                    r = data["routes"][0]
+                    dist_km = round(r["distance"] / 1000.0, 2)
+                    time_min = round((dist_km / settings.TRANSIT_SPEED_KMH) * 60.0, 1)
+                    return dist_km, time_min, True
+    except Exception as exc:
+        logger.warning(f"OSRM routing service failed, falling back to Haversine: {exc}")
+
+    # Fallback to Haversine with rural road winding factor
+    h_dist = calculate_haversine_distance(lat1, lon1, lat2, lon2)
+    return h_dist, estimate_travel_time_minutes(h_dist), False
 
 
 def estimate_travel_time_minutes(
@@ -336,10 +371,9 @@ def evaluate_feasibility(
             origin_lat = machine.current_lat
             origin_lng = machine.current_lng
 
-        distance_km = calculate_haversine_distance(
+        distance_km, travel_minutes, _ = calculate_road_route_distance(
             origin_lat, origin_lng, field_latitude, field_longitude
         )
-        travel_minutes = estimate_travel_time_minutes(distance_km)
 
         constraints.distance_km = distance_km
         constraints.estimated_travel_time_minutes = travel_minutes
@@ -370,7 +404,32 @@ def evaluate_feasibility(
 
     if acreage is not None and acreage > 0.0:
         constraints.acreage = acreage
-        est_work_hours = round(acreage * settings.ESTIMATED_HOURS_PER_ACRE, 1)
+        field_area_ha = round(acreage * 0.404686, 3)
+        constraints.field_area_ha = field_area_ha
+
+        # Dynamic capacity calculation from machine parameters if available
+        if machine is not None and machine.coverage_width_m > 0 and machine.working_speed_kmh > 0:
+            speed = machine.working_speed_kmh
+            width = machine.coverage_width_m
+            eff = machine.field_efficiency_factor or 0.8
+            eff_cap = round((width * speed * eff) / 10.0, 3)
+            pure_fieldwork = round(field_area_ha / eff_cap, 2) if eff_cap > 0 else round(acreage * settings.ESTIMATED_HOURS_PER_ACRE, 2)
+            turning_hours = round(pure_fieldwork * 0.10, 2)
+            setup_hours = 0.5
+            travel_hours = round((constraints.estimated_travel_time_minutes or 0.0) / 60.0, 2)
+            total_duration = round(pure_fieldwork + turning_hours + setup_hours + travel_hours, 2)
+
+            constraints.working_speed_kmh = speed
+            constraints.coverage_width_m = width
+            constraints.field_efficiency_factor = eff
+            constraints.effective_capacity_ha_per_hour = eff_cap
+            constraints.setup_duration_hours = round(setup_hours + turning_hours, 2)
+            constraints.total_job_duration_hours = total_duration
+            est_work_hours = round(acreage * settings.ESTIMATED_HOURS_PER_ACRE, 1)
+        else:
+            est_work_hours = round(acreage * settings.ESTIMATED_HOURS_PER_ACRE, 1)
+            constraints.total_job_duration_hours = est_work_hours
+
         constraints.estimated_work_duration_hours = est_work_hours
 
         if est_work_hours > slot_hours:

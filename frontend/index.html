@@ -4,15 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/hero-landscape.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KrishiNiyojak — Cinematic Agricultural Scheduling & Machinery Recovery</title>
-    <meta name="description" content="Cinematic operational platform for Custom Hiring Centres, machinery-day scheduling, and field breakdown recovery." />
+    <title>NITI</title>
+    <meta name="description" content="NITI" />
     
-    <!-- Google Fonts: Plus Jakarta Sans & Playfair Display for Editorial Aesthetic -->
+    <!-- Google Fonts: Plus Jakarta Sans & Outfit for Agricultural Design -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN with NITI Theme Extension -->
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'niti-forest': '#134e2e',
+              'niti-mint': '#eafaf1',
+              'niti-moss': '#1b6b3e',
+              'niti-cream': '#f8faf8',
+            },
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'Outfit', 'system-ui', 'sans-serif'],
+              heading: ['Outfit', '"Plus Jakarta Sans"', 'sans-serif'],
+            }
+          }
+        }
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
+  <body class="bg-[#f8faf8] font-sans antialiased text-gray-900">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

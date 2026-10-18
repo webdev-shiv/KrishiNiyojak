@@ -26,7 +26,7 @@ export default function DashboardPreviewSection() {
           </h2>
 
           <p className="mt-4 text-base sm:text-lg text-slate-400">
-            When machinery breaks down in the field, KrishiNiyojak instantly identifies dependent jobs and computes transparent customer priority scores (1–100) to protect harvest deadlines.
+            When machinery breaks down in the field, NITI instantly identifies dependent jobs and computes transparent customer priority scores (1–100) to protect harvest deadlines.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function DashboardPreviewSection() {
               <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
               <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
               <span className="text-xs text-slate-400 font-mono ml-3 hidden sm:inline">
-                https://krishiniyojak.internal/dashboard?chc_id=chc-mandsaur-01
+                https://niti.internal/dashboard?chc_id=chc-mandsaur-01
               </span>
             </div>
 
@@ -55,7 +55,7 @@ export default function DashboardPreviewSection() {
           <div className="relative aspect-[16/9] w-full overflow-hidden">
             <img
               src="/assets/ui-dashboard.jpg"
-              alt="KrishiNiyojak Central Command Desk"
+              alt="NITI Central Command Desk"
               className="w-full h-full object-cover"
             />
             {/* Interactive Pulse Marker on the Breakdown Queue */}

@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, Tractor, PlusCircle, Sparkles, MapPin, IndianRupee } from 'lucide-react';
+import { X, CheckCircle2, Tractor, PlusCircle, Loader2 } from 'lucide-react';
 import { equipmentCategories, statesCoverage } from '../data/agriData';
+import { machineryService } from '../api/supabaseService';
 
 export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdded }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     category: 'tractors',
-    hp: '45 HP',
-    rate: '650',
+    hp: '',
+    rate: '',
     unit: 'Hour',
-    state: 'Madhya Pradesh',
-    district: 'Mandsaur',
+    state: 'Uttar Pradesh',
+    district: 'Lucknow',
     village: '',
     ownerName: '',
     ownerPhone: '',
@@ -21,24 +24,51 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg(null);
     if (!formData.name || !formData.ownerPhone || !formData.village) {
-      alert(lang === 'en' ? 'Please fill all mandatory fields' : 'कृपया सभी आवश्यक फ़ील्ड भरें');
+      setErrorMsg(lang === 'en' ? 'Please fill all mandatory fields' : 'कृपया सभी आवश्यक फ़ील्ड भरें');
       return;
     }
-    setSubmitted(true);
-    if (onListingAdded) {
-      onListingAdded(formData);
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name,
+        category: formData.category,
+        registration_number: `UP-${Math.floor(10 + Math.random() * 90)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        horsepower: parseFloat(formData.hp) || null,
+        rate: parseFloat(formData.rate) || null,
+        rate_unit: formData.unit || 'Hour',
+        state: formData.state,
+        district: formData.district,
+        village: formData.village,
+        operator_included: formData.driverIncluded === 'Yes',
+        fuel_included: false,
+        status: 'Available'
+      };
+
+      const result = await machineryService.addMachine(payload);
+      setSubmitted(true);
+      if (onListingAdded) {
+        onListingAdded(result);
+      }
+    } catch (err) {
+      console.error('[ListEquipmentModal] Machine addition failed:', err);
+      setErrorMsg(err.message || 'Failed to persist equipment to database.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleClose = () => {
     setSubmitted(false);
+    setErrorMsg(null);
     onClose();
   };
 
-  const currentDistricts = statesCoverage.find(s => s.name === formData.state)?.districts || [];
+  const currentDistricts = statesCoverage.find(s => s.name === formData.state)?.districts || ['Lucknow', 'Kanpur', 'Bareilly', 'Varanasi', 'Gorakhpur'];
 
   return (
     <div
@@ -73,10 +103,10 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
             <PlusCircle size={24} style={{ color: '#F9A825' }} />
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 900, fontFamily: 'var(--font-heading)', margin: 0 }}>
-                {lang === 'en' ? 'List Your Tractor or Equipment Free' : 'अपना ट्रैक्टर या कृषि उपकरण लिस्ट करें (100% मुफ़्त)'}
+                {lang === 'en' ? 'List Your Tractor or Equipment' : 'अपना ट्रैक्टर या कृषि उपकरण लिस्ट करें'}
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#C8E6C9' }}>
-                {lang === 'en' ? 'Zero registration charges • Direct farmer contact' : 'शून्य पंजीकरण शुल्क • सीधी किसान बुकिंग'}
+                {lang === 'en' ? 'Saves directly to Supabase Machinery Table' : 'सुपबेस डेटाबेस में तुरंत सुरक्षित होगा'}
               </span>
             </div>
           </div>
@@ -97,12 +127,12 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
                 <CheckCircle2 size={36} />
               </div>
               <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 900, color: '#1B5E20', marginBottom: '0.5rem' }}>
-                {lang === 'en' ? 'Equipment Listed Successfully!' : 'उपकरण सफलतापूर्वक लिस्ट हो गया!'}
+                {lang === 'en' ? 'Equipment Added to Supabase Database!' : 'उपकरण डेटाबेस में सफलतापूर्वक सुरक्षित!'}
               </h4>
               <p style={{ color: '#555555', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
                 {lang === 'en'
-                  ? `Your machine "${formData.name}" has been published in ${formData.district}, ${formData.state}. Farmers in your block will contact you directly on ${formData.ownerPhone}.`
-                  : `आपकी मशीन "${formData.name}" ${formData.district}, ${formData.state} में लिस्ट हो गई है। आसपास के किसान आपसे सीधे ${formData.ownerPhone} पर संपर्क करेंगे।`}
+                  ? `Your machine "${formData.name}" has been persisted to public.machinery and is now available for farmers in ${formData.district}, ${formData.state}.`
+                  : `आपकी मशीन "${formData.name}" डेटाबेस में दर्ज हो गई है और ${formData.district}, ${formData.state} में किसानों के लिए उपलब्ध है।`}
               </p>
 
               <button
@@ -115,6 +145,12 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {errorMsg && (
+                <div style={{ padding: '0.75rem 1rem', backgroundColor: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '12px', color: '#C62828', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                  {errorMsg}
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                 
                 {/* Row 1: Category & Name */}
@@ -129,7 +165,7 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
                       className="form-select"
                     >
                       {equipmentCategories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name[lang]}</option>
+                        <option key={c.id} value={c.id}>{c.name[lang] || c.name.en}</option>
                       ))}
                     </select>
                   </div>
@@ -277,11 +313,12 @@ export default function ListEquipmentModal({ isOpen, onClose, lang, onListingAdd
                 {/* Submit */}
                 <button
                   type="submit"
+                  disabled={submitting}
                   className="btn btn-secondary"
-                  style={{ width: '100%', height: '48px', fontSize: '1rem', marginTop: '0.5rem' }}
+                  style={{ width: '100%', height: '48px', fontSize: '1rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
-                  <PlusCircle size={18} />
-                  <span>{lang === 'en' ? 'List Equipment (Publish Live Now)' : 'उपकरण लिस्ट करें (अभी प्रकाशित करें)'}</span>
+                  {submitting && <Loader2 size={18} className="animate-spin" />}
+                  <span>{submitting ? 'Writing to Supabase...' : (lang === 'en' ? 'List Equipment (Publish Live Now)' : 'उपकरण लिस्ट करें (अभी प्रकाशित करें)')}</span>
                 </button>
 
               </div>

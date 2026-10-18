@@ -12,12 +12,16 @@ from app.api.deps import (
 from app.models.booking import ServiceRequest
 from app.models.chc import CHC
 from app.models.identity import User
+from app.models.resource import Machine
 from app.schemas.service_request import (
+    MachineOptionsResponse,
+    MachineSelectionRequest,
     ServiceRequestCreate,
     ServiceRequestPaginatedResponse,
     ServiceRequestResponse,
     ServiceRequestUpdate,
 )
+from app.services.machine_options import generate_machine_options_for_request
 
 router = APIRouter(prefix="/service-requests", tags=["Farmer Service Requests"])
 
@@ -248,3 +252,126 @@ def update_service_request(
     db.commit()
     db.refresh(req)
     return req
+
+
+@router.get(
+    "/{request_id}/machine-options",
+    response_model=MachineOptionsResponse,
+    summary="Get feasible machine options for farmer comparison and selection",
+)
+def get_service_request_machine_options(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> MachineOptionsResponse:
+    """Retrieve all available and compatible machine options for a service request.
+
+    Includes working speed, coverage width, effective field capacity (ha/h),
+    estimated total duration (with setup, turning, and travel time), rental rate,
+    estimated total cost, compatible attachments, and available calendar slots.
+
+    Enforces authorization:
+    - Farmers: can view options only for their own service requests.
+    - CHC Managers: can view options for requests in their managed CHCs.
+    - SUPERADMINs: full access.
+    """
+    req = db.execute(
+        select(ServiceRequest).where(ServiceRequest.id == request_id)
+    ).scalar_one_or_none()
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service request with ID {request_id} not found",
+        )
+
+    user_system_roles = {ur.role.name.upper() for ur in current_user.user_roles if ur.role}
+    is_superadmin = "SUPERADMIN" in user_system_roles
+    is_owner = req.farmer_id == current_user.id
+    is_chc_manager = any(
+        m.chc_id == req.chc_id and m.role.upper() == "MANAGER" and m.is_active
+        for m in current_user.chc_memberships
+    )
+
+    if not (is_superadmin or is_owner or is_chc_manager):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to view machine options for this request",
+        )
+
+    return generate_machine_options_for_request(db, request_id)
+
+
+@router.post(
+    "/{request_id}/select-machine",
+    response_model=ServiceRequestResponse,
+    summary="Farmer selects preferred machine option",
+)
+def select_machine_option(
+    request_id: int,
+    payload: MachineSelectionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> ServiceRequest:
+    """Explicitly record the farmer's preferred machine selection.
+
+    Authority rules:
+    - Farmer makes the final machine choice.
+    - Neither the system nor manager may silently substitute another machine.
+    - Selection validates machine belongs to the CHC and is in an operational state.
+    """
+    req = db.execute(
+        select(ServiceRequest).where(ServiceRequest.id == request_id)
+    ).scalar_one_or_none()
+    if not req:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Service request with ID {request_id} not found",
+        )
+
+    user_system_roles = {ur.role.name.upper() for ur in current_user.user_roles if ur.role}
+    is_superadmin = "SUPERADMIN" in user_system_roles
+    is_owner = req.farmer_id == current_user.id
+
+    if not (is_superadmin or is_owner):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only the requesting farmer can select their preferred machine",
+        )
+
+    # Validate target machine
+    machine = db.execute(
+        select(Machine).where(Machine.id == payload.machine_id)
+    ).scalar_one_or_none()
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Machine with ID {payload.machine_id} not found",
+        )
+    if machine.chc_id != req.chc_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Selected machine {payload.machine_id} does not belong to CHC {req.chc_id}",
+        )
+    if machine.status in ("RETIRED", "BROKEN_DOWN"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Selected machine is currently {machine.status} and cannot be scheduled",
+        )
+
+    # Validate selected date within window if provided
+    if payload.selected_date is not None:
+        if payload.selected_date < req.requested_start_date or payload.selected_date > req.requested_end_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Selected date {payload.selected_date} falls outside the requested window ({req.requested_start_date} to {req.requested_end_date})",
+            )
+        req.selected_date = payload.selected_date
+
+    req.selected_machine_id = machine.id
+    if payload.selected_slot:
+        req.selected_slot = payload.selected_slot.strip().upper()
+
+    db.commit()
+    db.refresh(req)
+    return req
+

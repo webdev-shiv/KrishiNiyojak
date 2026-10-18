@@ -1,5 +1,4 @@
-"""FastAPI main application entrypoint."""
-
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import psycopg
@@ -12,23 +11,42 @@ from sqlalchemy.exc import OperationalError
 from app.api.deps import require_roles
 from app.api.v1.attachments import router as attachments_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.auth_niti import router as auth_niti_router
 from app.api.v1.availability import router as availability_router
 from app.api.v1.bookings import router as bookings_router
 from app.api.v1.breakdowns import router as breakdowns_router
+from app.api.v1.chc_dashboard import router as chc_dashboard_router
 from app.api.v1.chcs import router as chcs_router
 from app.api.v1.machines import router as machines_router
+from app.api.v1.niti_bookings import router as niti_bookings_router
+from app.api.v1.offers import router as offers_router
+from app.api.v1.operator_dashboard import router as operator_dashboard_router
 from app.api.v1.operators import router as operators_router
 from app.api.v1.recovery_plans import router as recovery_plans_router
 from app.api.v1.schedules import router as schedules_router
 from app.api.v1.scheduling import router as scheduling_router
 from app.api.v1.service_requests import router as service_requests_router
+from app.api.v1.voice_assistant import router as voice_assistant_router
 from app.core.config import settings
+from app.db.init_db import init_db
 from app.models.identity import User
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager for startup and shutdown hooks."""
+    try:
+        init_db()
+    except Exception as e:
+        print(f"Database startup initialization note: {e}")
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Agricultural machinery scheduling and breakdown-recovery platform for CHCs",
+    description="NITI — Voice-First Agricultural Machinery Scheduling & Management Platform",
+    lifespan=lifespan,
 )
 
 # Enable CORS for frontend web and mobile clients
@@ -73,6 +91,12 @@ async def psycopg_operational_error_handler(
 
 # Mount API v1 routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(auth_niti_router, prefix=settings.API_V1_STR)
+app.include_router(voice_assistant_router, prefix=settings.API_V1_STR)
+app.include_router(offers_router, prefix=settings.API_V1_STR)
+app.include_router(niti_bookings_router, prefix=settings.API_V1_STR)
+app.include_router(chc_dashboard_router, prefix=settings.API_V1_STR)
+app.include_router(operator_dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(chcs_router, prefix=settings.API_V1_STR)
 app.include_router(machines_router, prefix=settings.API_V1_STR)
 app.include_router(operators_router, prefix=settings.API_V1_STR)

@@ -1,243 +1,272 @@
 import React, { useState } from 'react';
-import { Sprout, Phone, PlusCircle, Globe, Menu, X, Search, Tractor } from 'lucide-react';
-import { translations } from '../data/agriData';
+import { 
+  Tractor, 
+  Globe, 
+  Menu, 
+  X, 
+  User, 
+  LogOut, 
+  Phone, 
+  Sparkles, 
+  ShieldCheck,
+  ChevronDown
+} from 'lucide-react';
 
-export default function Navbar({ lang, setLang, onRentClick, onListClick }) {
+export default function Navbar({ 
+  lang = 'hi', 
+  setLang, 
+  currentUser, 
+  currentRole, 
+  onOpenAuth, 
+  onLogout, 
+  onSelectView, 
+  activeView 
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const t = translations[lang];
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   const toggleLanguage = () => {
     setLang(prev => (prev === 'en' ? 'hi' : 'en'));
   };
 
-  const navLinks = [
-    { href: '#home', label: lang === 'en' ? 'Home' : 'मुख्य पृष्ठ' },
-    { href: '#categories', label: lang === 'en' ? 'Categories' : 'उपकरण श्रेणियां' },
-    { href: '#listings', label: t.rentEquipment, highlight: true },
-    { href: '#how-it-works', label: t.howItWorks },
-    { href: '#states', label: t.statesWeServe },
-    { href: '#testimonials', label: t.farmersVoices },
-    { href: '#support', label: t.contact },
-  ];
-
-  const handleNavClick = (e, href) => {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-    const target = document.querySelector(href);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
     <>
       {/* Top Kisan Helpline Ribbon */}
-      <div style={{ backgroundColor: '#1B5E20', color: '#FFFFFF', padding: '0.45rem 1rem', fontSize: '0.85rem' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-            <span style={{ backgroundColor: '#F9A825', color: '#212121', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
-              {lang === 'en' ? 'FREE PLATFORM' : '100% मुफ़्त'}
+      <div className="bg-niti-forest text-white py-1.5 px-4 text-xs font-medium border-b border-white/10">
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="bg-amber-400 text-niti-forest font-black px-2 py-0.5 rounded text-[10px] tracking-wider uppercase">
+              {lang === 'hi' ? 'आवाज़-आधारित कृषि मंच' : 'VOICE-FIRST PLATFORM'}
             </span>
-            <span>{t.trustedBy}</span>
+            <span className="hidden sm:inline text-white/90">
+              {lang === 'hi' ? 'नीति (NITI) — किसान, सीएचसी एवं ऑपरेटर का साझा नेटवर्क' : 'NITI — Unified Agricultural Machinery Scheduling'}
+            </span>
           </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem' }}>
-            <a href="tel:18001232474" style={{ color: '#FFFFFF', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700 }}>
-              <Phone size={15} style={{ color: '#F9A825' }} />
-              <span>1800-123-AGRI (2474)</span>
+
+          <div className="flex items-center gap-4">
+            <a 
+              href="tel:18001206484" 
+              className="flex items-center gap-1.5 text-white/90 hover:text-white font-semibold transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5 text-amber-300" />
+              <span>1800-120-NITI (6484)</span>
             </a>
-            
-            {/* Language Switcher Pill */}
+
+            {/* Language Switcher Button */}
             <button
               onClick={toggleLanguage}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.18)',
-                color: '#FFFFFF',
-                border: '1px solid rgba(255, 255, 255, 0.35)',
-                padding: '0.2rem 0.75rem',
-                borderRadius: '9999px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-bold transition-colors cursor-pointer"
               title="Toggle English / हिंदी"
             >
-              <Globe size={14} style={{ color: '#F9A825' }} />
-              <span>{lang === 'en' ? 'हिंदी में देखें' : 'English'}</span>
+              <Globe className="w-3.5 h-3.5 text-amber-300" />
+              <span>{lang === 'en' ? 'हिन्दी में देखें' : 'English'}</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Sticky Header */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          backgroundColor: '#FFFFFF',
-          borderBottom: '2px solid #E0E0D8',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '74px', padding: '0.6rem 1.25rem' }}>
-          
-          {/* Logo on the Left */}
-          <a
-            href="#home"
-            onClick={(e) => handleNavClick(e, '#home')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: '#1B5E20' }}
+      {/* Main Sticky Navbar */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-niti-forest/10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-18">
+          {/* Logo & Brand */}
+          <div 
+            onClick={() => onSelectView('dashboard')}
+            className="flex items-center gap-3 cursor-pointer select-none"
           >
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', backgroundColor: '#1B5E20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F9A825', boxShadow: '0 4px 10px rgba(27, 94, 32, 0.25)' }}>
-              <Tractor size={28} />
+            <div className="w-11 h-11 rounded-2xl bg-niti-forest flex items-center justify-center text-white shadow-md shadow-niti-forest/20">
+              <Tractor className="w-6 h-6" />
             </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.65rem', fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1B5E20' }}>
-                Agri<span style={{ color: '#F9A825' }}>Link</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xl font-black text-niti-forest tracking-tight">
+                  NITI
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-md bg-niti-mint text-niti-forest font-extrabold border border-niti-forest/20">
+                  {lang === 'hi' ? 'नीति' : 'AGRI'}
+                </span>
               </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4CAF50', letterSpacing: '0.02em' }}>
-                {lang === 'en' ? 'KrishiNiyojak Equipment Rental' : 'कृषिनियोजक उपकरण सेवा'}
-              </div>
+              <p className="text-[10px] text-gray-500 font-medium">
+                {lang === 'hi' ? 'बोलकर मशीन बुक करें' : 'Voice-First Machinery Scheduling'}
+              </p>
             </div>
-          </a>
-
-          {/* Desktop Navigation Links */}
-          <nav style={{ display: 'none' }} className="desktop-nav">
-            <ul style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', listStyle: 'none' }}>
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    onClick={(e) => handleNavClick(e, link.href)}
-                    style={{
-                      fontSize: '0.92rem',
-                      fontWeight: link.highlight ? 800 : 600,
-                      color: link.highlight ? '#1B5E20' : '#475569',
-                      textDecoration: 'none',
-                      padding: '0.4rem 0.5rem',
-                      borderRadius: '6px',
-                      transition: 'all 0.2s ease',
-                      borderBottom: link.highlight ? '2px solid #4CAF50' : '2px solid transparent'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = '#1B5E20'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = link.highlight ? '#1B5E20' : '#475569'; }}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* Prominent Action CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            
-            {/* Rent Equipment CTA */}
-            <button
-              onClick={onRentClick}
-              className="btn btn-primary"
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
-            >
-              <Search size={16} />
-              <span>{t.rentEquipment}</span>
-            </button>
-
-            {/* List Your Tractor/Equipment CTA */}
-            <button
-              onClick={onListClick}
-              className="btn btn-secondary"
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
-            >
-              <PlusCircle size={16} />
-              <span>{lang === 'en' ? 'List Equipment' : 'उपकरण जोड़ें'}</span>
-            </button>
-
-            {/* Mobile Hamburger Toggle Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '44px',
-                height: '44px',
-                borderRadius: '10px',
-                border: '1.5px solid #E0E0D8',
-                backgroundColor: '#FAFAF5',
-                color: '#1B5E20',
-                cursor: 'pointer'
-              }}
-              className="mobile-toggle"
-              aria-label="Toggle Navigation Menu"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
 
+          {/* Center Navigation Links (Desktop) */}
+          <nav className="hidden md:flex items-center gap-1">
+            <button
+              onClick={() => onSelectView('dashboard')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                activeView === 'dashboard' 
+                  ? 'bg-niti-mint text-niti-forest' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {lang === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+            </button>
+
+            {currentRole === 'FARMER' && (
+              <>
+                <button
+                  onClick={() => onSelectView('request')}
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                    activeView === 'request' 
+                      ? 'bg-niti-mint text-niti-forest' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {lang === 'hi' ? 'मशीन अनुरोध' : 'Request Machine'}
+                </button>
+                <button
+                  onClick={() => onSelectView('bookings')}
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                    activeView === 'bookings' 
+                      ? 'bg-niti-mint text-niti-forest' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {lang === 'hi' ? 'मेरी बुकिंग्स' : 'My Bookings'}
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => onSelectView('catalog')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                activeView === 'catalog' 
+                  ? 'bg-niti-mint text-niti-forest' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {lang === 'hi' ? 'मशीनरी कैटलॉग' : 'Equipment Catalog'}
+            </button>
+
+            <button
+              onClick={() => onSelectView('admin')}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                activeView === 'admin' 
+                  ? 'bg-niti-mint text-niti-forest' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {lang === 'hi' ? 'प्रशासन (Admin)' : 'Admin'}
+            </button>
+          </nav>
+
+          {/* Right Role / Auth controls */}
+          <div className="flex items-center gap-3">
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <div 
+                  onClick={() => onSelectView('settings')}
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 cursor-pointer transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-niti-forest text-white flex items-center justify-center font-bold text-xs">
+                    {currentUser.full_name ? currentUser.full_name[0] : 'U'}
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <span className="text-xs font-bold text-gray-900 block truncate max-w-[120px]">
+                      {currentUser.full_name || 'User'}
+                    </span>
+                    <span className="text-[10px] text-niti-forest font-semibold block">
+                      {currentRole === 'FARMER' && (lang === 'hi' ? 'किसान (Farmer)' : 'Farmer')}
+                      {currentRole === 'CHC_MANAGER' && 'CHC Centre'}
+                      {currentRole === 'OPERATOR' && (lang === 'hi' ? 'चालक (Operator)' : 'Operator')}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onLogout}
+                  className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onOpenAuth('FARMER')}
+                  className="px-4 py-2.5 rounded-xl bg-niti-forest hover:bg-niti-moss text-white text-xs md:text-sm font-bold shadow-md shadow-niti-forest/20 transition-all flex items-center gap-1.5"
+                >
+                  <User className="w-4 h-4" />
+                  <span>{lang === 'hi' ? 'लॉगिन / प्रवेश' : 'Sign In / Roles'}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Mobile Hamburger toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu Drawer */}
+        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderTop: '1px solid #E0E0D8',
-              padding: '1.25rem',
-              boxShadow: '0 10px 20px rgba(0, 0, 0, 0.08)'
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.25rem' }}>
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: '#212121',
-                    textDecoration: 'none',
-                    borderRadius: '8px',
-                    backgroundColor: link.highlight ? '#E8F5E9' : '#FAFAF5'
-                  }}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-2 animate-fade-in shadow-xl">
+            <button
+              onClick={() => { onSelectView('dashboard'); setMobileMenuOpen(false); }}
+              className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+            >
+              {lang === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+            </button>
+            <button
+              onClick={() => { onSelectView('catalog'); setMobileMenuOpen(false); }}
+              className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+            >
+              {lang === 'hi' ? 'मशीनरी कैटलॉग' : 'Equipment Catalog'}
+            </button>
+            <button
+              onClick={() => { onSelectView('admin'); setMobileMenuOpen(false); }}
+              className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+            >
+              {lang === 'hi' ? 'प्रशासन (Admin)' : 'Admin Dashboard'}
+            </button>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #E0E0D8' }}>
-              <button
-                onClick={() => { setMobileMenuOpen(false); onRentClick(); }}
-                className="btn btn-primary"
-                style={{ width: '100%', fontSize: '0.9rem' }}
-              >
-                {t.rentEquipment}
-              </button>
-              
-              <button
-                onClick={() => { setMobileMenuOpen(false); onListClick(); }}
-                className="btn btn-secondary"
-                style={{ width: '100%', fontSize: '0.9rem' }}
-              >
-                {lang === 'en' ? 'List Equipment' : 'उपकरण जोड़ें'}
-              </button>
-            </div>
+            {currentUser ? (
+              <>
+                <button
+                  onClick={() => { onSelectView('settings'); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+                >
+                  {lang === 'hi' ? 'खाता सेटिंग्स' : 'Account Settings'}
+                </button>
+                <button
+                  onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50"
+                >
+                  {lang === 'hi' ? 'लॉगआउट' : 'Logout'}
+                </button>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                <button
+                  onClick={() => { onOpenAuth('FARMER'); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-niti-forest bg-niti-mint"
+                >
+                  👨‍🌾 {lang === 'hi' ? 'किसान लॉगिन' : 'Farmer Login'}
+                </button>
+                <button
+                  onClick={() => { onOpenAuth('CHC_MANAGER'); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+                >
+                  🏢 {lang === 'hi' ? 'सीएचसी लॉगिन' : 'CHC Login'}
+                </button>
+                <button
+                  onClick={() => { onOpenAuth('OPERATOR'); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-gray-50"
+                >
+                  🚜 {lang === 'hi' ? 'ऑपरेटर लॉगिन' : 'Operator Login'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </header>
-
-      {/* Responsive Inline CSS to handle desktop-nav and mobile-toggle display */}
-      <style>{`
-        @media (min-width: 1024px) {
-          .desktop-nav { display: block !important; }
-          .mobile-toggle { display: none !important; }
-        }
-      `}</style>
     </>
   );
 }

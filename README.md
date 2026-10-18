@@ -2,9 +2,9 @@
 <!-- 🖼️ THUMBNAIL / BANNER IMAGE AREA                                          -->
 <!-- ========================================================================= -->
 <div align="center">
-  <img src="docs/assets/banner.svg" alt="KrishiNiyojak (कृषiniyojak) — Agricultural Machinery Scheduling & Breakdown Recovery" width="100%" />
+  <img src="docs/assets/banner.svg" alt="NITI — Agricultural Machinery Scheduling & Breakdown Recovery" width="100%" />
 
-  <h2>🌾 KrishiNiyojak (कृषिनियोजक) — Machine-Day Composer</h2>
+  <h2>🌾 NITI (नीति) — Agricultural Machinery Scheduling & Management Platform</h2>
   <p align="center">
     <strong>Agricultural Machinery-Day Scheduling, Feasibility Engine & Breakdown-Recovery Platform for Custom Hiring Centres (CHCs)</strong>
   </p>
@@ -15,7 +15,8 @@
     <a href="#-api-endpoint-reference"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi" alt="FastAPI" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/SQLAlchemy-2.0+-red?style=flat-square&logo=sqlalchemy" alt="SQLAlchemy" /></a>
     <a href="#-getting-started"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql" alt="PostgreSQL" /></a>
-    <a href="#-running-tests"><img src="https://img.shields.io/badge/Tests-78_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
+    <a href="#-running-tests"><img src="https://img.shields.io/badge/Tests-104_Passing-brightgreen?style=flat-square" alt="Tests" /></a>
+    <a href="https://frontend-five-gamma-lpn1jh8m7z.vercel.app"><img src="https://img.shields.io/badge/Live_Deployment-Vercel-success?style=flat-square&logo=vercel" alt="Vercel Live" /></a>
   </p>
 </div>
 
@@ -23,7 +24,7 @@
 
 ## 📌 Project Overview
 
-**KrishiNiyojak** (Machine-Day Composer) is an enterprise-grade operational platform engineered for agricultural **Custom Hiring Centres (CHCs)**. It bridges the gap between regional farmer equipment demand and centralized agricultural machinery fleets (tractors, harvesters, rotavators, sprayers, seeders).
+**NITI** is an enterprise-grade operational platform engineered for agricultural **Custom Hiring Centres (CHCs)**. It bridges the gap between regional farmer equipment demand and centralized agricultural machinery fleets (tractors, harvesters, rotavators, sprayers, seeders).
 
 The platform:
 1. **Validates Technical Compatibility:** Evaluates machine-to-implement horsepower thresholds, implements matching, and rural road transit travel times with Haversine distance.
@@ -288,3 +289,149 @@ ruff format --check .
    Authorization: Bearer <access_token>
    ```
 4. **Feasibility Dry-Run:** In the booking UI, call `POST /api/v1/scheduling/feasibility` before committing a booking to warn the user about horsepower deficits, route distance, or schedule conflicts.
+
+---
+
+## 🗺️ Map & Routing Integration Guide (Leaflet + OpenStreetMap + OSRM)
+
+NITI incorporates a production-grade GIS, field mapping, and routing system built on top of **Leaflet** and **OpenStreetMap (OSM)**, powered by the **Open Source Routing Machine (OSRM)** road routing engine.
+
+### Key Capabilities
+1. **Interactive Field & CHC Mapping:**
+   - Visualizes Custom Hiring Centre (CHC) dispatch hubs with operational coverage radius boundary circles (default 25 km).
+   - Displays authentic farmer field pins with farmer names, villages, districts, operations, and acreage.
+   - Interactive field location pin picker for farmers submitting machinery requests with GPS detection (`navigator.geolocation`) and OSM Nominatim reverse geocoding.
+2. **Turn-by-Turn Road Routing:**
+   - Calculates actual driving road transit distance (in km) and agricultural machinery transit duration (in minutes, calibrated for tractor/harvester transit speeds at ~25 km/h).
+   - Renders exact road geometry paths on the Leaflet map between CHC hubs and farmer field parcels.
+   - Fully integrated into both the CHC manager dashboard and worker/operator dispatch interface.
+3. **Graceful Fallback & Accuracy Protection:**
+   - If network connectivity is lost, rate limits are hit, or invalid coordinates are supplied, the platform falls back to Haversine great-circle distance with a 1.3 rural road winding factor.
+   - Clearly flags fallback routes with `isEstimated: true` and amber visual styling. NITI never invents coordinates or falsely claims an estimated route is a verified road route.
+
+### Environment Configuration & Variables
+
+Add the following to your `frontend/.env` file:
+
+```env
+# Map Tile Provider (OpenStreetMap)
+VITE_MAP_TILES_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_MAP_ATTRIBUTION=&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors
+
+# Road Routing Engine (OSRM)
+VITE_ROUTING_API_URL=https://router.project-osrm.org/route/v1/driving
+
+# Geocoding & Village Lookup (OSM Nominatim)
+VITE_GEOCODING_API_URL=https://nominatim.openstreetmap.org
+```
+
+Backend configuration in `.env` (FastAPI):
+```env
+ROUTING_SERVICE_URL=https://router.project-osrm.org/route/v1/driving
+ROUTING_API_KEY=""
+ENABLE_REAL_ROUTING=True
+ROUTING_TIMEOUT_SECONDS=3.0
+```
+
+### Provider Usage Policies & Production Scaling
+
+- **Development / Demonstration:**
+  - **Provider:** Public OpenStreetMap tile servers & Project OSRM demo server.
+  - **Cost:** **100% Free** (No credit card or paid subscription required).
+  - **Policy & Limits:** Follows standard OSM tile usage guidelines (caching enabled, descriptive User-Agent, max ~1 req/sec per client for routing).
+- **Production-Scale Deployment:**
+  - For high-volume production deployments (>50,000 queries/day), deploy a self-hosted OSRM Docker container:
+    ```bash
+    docker run -t -i -p 5000:5000 -v "${PWD}:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/uttar-pradesh-latest.osrm
+    ```
+    Then point `VITE_ROUTING_API_URL=http://your-osrm-host:5000/route/v1/driving`.
+  - Alternatively, configure commercial routing services such as Mapbox or GraphHopper by providing their base URL and setting the API key in `VITE_ROUTING_API_KEY` or `ROUTING_API_KEY`.
+
+---
+
+## 🚀 Vercel Deployment Guide
+
+NITI is configured for instant, zero-config deployment to **Vercel** with full client-side routing support.
+
+### 1. Instant Deployment via Vercel CLI or GitHub
+
+1. Push your repository to GitHub or run Vercel CLI from the project root:
+   ```bash
+   vercel
+   ```
+2. The included [`vercel.json`](file:///d:/KRISHINIYOJAK/vercel.json) automatically instructs Vercel to:
+   - Build the frontend bundle: `cd frontend && npm install && npm run build`
+   - Serve output from: `frontend/dist`
+   - Handle client-side routing (`/*` -> `/index.html`) so refreshing on any route (`/#dashboard`, `/#login`, `/#schedule`) never causes 404 errors.
+
+### 2. Required Environment Variables on Vercel
+
+In your Vercel Project Dashboard (**Settings -> Environment Variables**), configure:
+
+| Variable | Description | Example / Production Value |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase Project REST/Realtime URL | `https://rbvfxapcyybnlhpwfekg.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase Anon Public API Key | `sb_publishable_KYR5ghy_8SDg_Db56eYZXQ_OtST98nK` |
+| `VITE_MAP_TILES_URL` | OpenStreetMap Tile Layer | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` |
+| `VITE_MAP_ATTRIBUTION` | Map Attribution Notice | `&copy; OpenStreetMap contributors` |
+| `VITE_ROUTING_API_URL` | OSRM Driving Route Engine | `https://router.project-osrm.org/route/v1/driving` |
+| `VITE_GEOCODING_API_URL` | OSM Nominatim Geocoder | `https://nominatim.openstreetmap.org` |
+
+---
+
+## 📱 Live Multi-Device Realtime Synchronization (Two Phones)
+
+NITI supports **live, instantaneous two-way synchronization between devices** (e.g. Phone 1 = Farmer, Phone 2 = CHC Manager).
+
+### Architecture
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Farmer as 👨‍🌾 Phone 1 (Farmer)
+    participant RT as ⚡ Supabase Realtime (WebSocket)
+    participant DB as 🗄️ Supabase PostgreSQL
+    actor CHC as 🏢 Phone 2 (CHC Manager)
+
+    Farmer->>RT: Broadcast: new_booking (1.19 acres, Wheat, Tractor)
+    RT-->>CHC: Push: new_booking event (0ms latency)
+    Note over CHC: CHC Dashboard immediately displays new request & alerts manager!
+    Farmer->>DB: INSERT into public.bookings
+    CHC->>RT: Broadcast: booking_status_updated (Approved)
+    RT-->>Farmer: Push: booking_status_updated
+    Note over Farmer: Farmer Dashboard live-updates booking status to "Approved"!
+```
+
+### Enable Database Row-Level Security & Realtime Replication (Run Once in Supabase SQL Editor)
+
+To ensure persistent live inserts and updates across all mobile devices, paste and run this idempotent snippet in your **Supabase Dashboard -> SQL Editor**:
+
+```sql
+-- 1. Enable RLS and grant public access for live booking creation
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public select bookings" ON public.bookings;
+CREATE POLICY "Public select bookings" ON public.bookings 
+FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Public insert bookings" ON public.bookings;
+CREATE POLICY "Public insert bookings" ON public.bookings 
+FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public update bookings" ON public.bookings;
+CREATE POLICY "Public update bookings" ON public.bookings 
+FOR UPDATE TO anon, authenticated USING (true);
+
+-- 2. Add bookings table to Supabase Realtime publication
+ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
+```
+
+---
+
+## 🎨 Design System & Authentication Experience
+
+- **Sky-Blue Glassmorphic Login:** Centered translucent glass card (`backdrop-blur-xl bg-white/70`), soft cloud layers, glowing atmospheric concentric rings, and 1-click instant demo access for Farmers, CHC Managers, and Operators.
+- **Farmer Dashboard:** Dark forest-green header banner with verified farmer status, voice assistant machine search, farm area decimal inputs (`step="any"`), and real-time dispatch tracking.
+- **CHC Manager Portal:** Complete operational command center with real-time service requests table, dispatch scheduling, interactive Leaflet field route maps, and machinery fleet inventory.
+
+

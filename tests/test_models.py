@@ -30,6 +30,11 @@ EXPECTED_TABLES = {
     "notifications",
     "refresh_tokens",
     "audit_logs",
+    "farmer_profiles",
+    "operator_profiles",
+    "booking_status_events",
+    "rating_reviews",
+    "otp_verifications",
 }
 
 
@@ -56,15 +61,20 @@ def test_model_imports() -> None:
     assert models.Notification is not None
     assert models.RefreshToken is not None
     assert models.AuditLog is not None
+    assert models.FarmerProfile is not None
+    assert models.OperatorProfile is not None
+    assert models.BookingStatusEvent is not None
+    assert models.RatingReview is not None
+    assert models.OTPVerification is not None
 
 
 def test_metadata_table_registration() -> None:
-    """Verify that all 21 expected domain tables are registered in Base.metadata."""
+    """Verify that all expected domain tables are registered in Base.metadata."""
     registered_tables = set(Base.metadata.tables.keys())
     assert EXPECTED_TABLES.issubset(registered_tables), (
         f"Missing tables: {EXPECTED_TABLES - registered_tables}"
     )
-    assert len(registered_tables) == 21
+    assert len(registered_tables) == len(EXPECTED_TABLES)
 
 
 def test_model_primary_keys_and_columns() -> None:

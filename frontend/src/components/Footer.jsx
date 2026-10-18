@@ -28,10 +28,10 @@ export default function Footer({ lang }) {
               </div>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.6rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
-                  Agri<span style={{ color: '#F9A825' }}>Link</span>
+                  NI<span style={{ color: '#F9A825' }}>TI</span>
                 </div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A5D6A7' }}>
-                  {lang === 'en' ? 'KrishiNiyojak Equipment Rental' : 'कृषिनियोजक उपकरण सेवा'}
+                  {lang === 'en' ? 'NITI Agricultural Equipment Rental' : 'नीति (NITI) उपकरण सेवा'}
                 </div>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function Footer({ lang }) {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <Mail size={18} style={{ color: '#F9A825', shrink: 0 }} />
-                <span>sahayata@agrilink.in</span>
+                <span>sahayata@niti.in</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
@@ -170,7 +170,7 @@ export default function Footer({ lang }) {
       <div style={{ backgroundColor: '#0B290E', padding: '1.25rem 1rem', fontSize: '0.82rem', color: '#A5D6A7', borderTop: '1px solid #1B5E20' }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            © {new Date().getFullYear()} AgriLink — KrishiNiyojak. All rights reserved.
+            © {new Date().getFullYear()} NITI. All rights reserved.
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, color: '#F9A825' }}>

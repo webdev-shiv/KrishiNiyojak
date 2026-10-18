@@ -43,6 +43,11 @@ class ServiceRequest(Base):
     status: Mapped[str] = mapped_column(
         String(30), default="SUBMITTED", nullable=False, index=True
     )  # DRAFT, SUBMITTED, APPROVED, REJECTED, CANCELLED
+    selected_machine_id: Mapped[int | None] = mapped_column(
+        ForeignKey("machines.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    selected_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    selected_slot: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -57,6 +62,7 @@ class ServiceRequest(Base):
     chc: Mapped["CHC"] = relationship("CHC", back_populates="service_requests")
     farmer: Mapped["User"] = relationship("User", back_populates="service_requests")
     bookings: Mapped[list["Booking"]] = relationship("Booking", back_populates="service_request")
+    selected_machine: Mapped["Machine | None"] = relationship("Machine", foreign_keys=[selected_machine_id])
 
 
 class Booking(Base):

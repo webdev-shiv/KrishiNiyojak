@@ -1,6 +1,6 @@
 """API endpoints for Machine Breakdown Reporting and Impact Analysis (T12)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -15,12 +15,22 @@ from app.schemas.recovery import (
     BreakdownCreateRequest,
     BreakdownImpactResponse,
     BreakdownPaginatedResponse,
+    BreakdownRecoveryResponse,
     BreakdownResponse,
+    RecoveryPlanExecutionResponse,
+    RecoveryPlanRejectRequest,
+    RecoveryPlanResponse,
 )
 from app.services.breakdown import (
     get_breakdown_impact_analysis,
     list_breakdowns_for_user,
     report_breakdown_and_analyze,
+)
+from app.services.recovery import (
+    approve_and_execute_recovery_plan,
+    generate_breakdown_recovery_alternatives,
+    get_recovery_plan,
+    reject_recovery_plan,
 )
 
 router = APIRouter(prefix="/breakdowns", tags=["Breakdown & Recovery Impact"])
@@ -39,11 +49,11 @@ def report_breakdown(
 ) -> BreakdownImpactResponse:
     """Report an operational machine breakdown.
 
-    - Transitions machine status to BROKEN_DOWN.
-    - Blocks future availability slots for maintenance.
-    - Identifies all affected upcoming bookings (excluding cancelled & completed).
-    - Sets affected booking statuses to DISRUPTED.
-    - Computes transparent customer-priority scores based on deadline urgency,
+    - Transitions machine status to UNDER_MAINTENANCE and deactivates machine availability slots.
+    - Persists MachineBreakdown incident record.
+    - Evaluates all future and in-progress bookings assigned to the machine.
+    - Computes delay severity, deadline violation risk, and multi-factor customer priority score
+      (1-100) based on agronomic urgency, customer deadline buffer,
       expected downtime, agronomic job criticality, and farm acreage.
     - Returns affected bookings sorted in priority order with explicit scoring rationales.
 
@@ -75,6 +85,58 @@ def get_breakdown_impact(
         db=db,
         breakdown_id=breakdown_id,
         current_user=current_user,
+    )
+
+
+@router.post(
+    "/{breakdown_id}/recovery-alternatives",
+    response_model=BreakdownRecoveryResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate candidate recovery alternatives and ranking for affected bookings",
+)
+def generate_recovery_plan(
+    breakdown_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> BreakdownRecoveryResponse:
+    """Evaluate and rank recovery alternatives for bookings disrupted by a machine breakdown.
+
+    - Identifies compatible machinery and available operators in the CHC.
+    - Evaluates operational feasibility using the T10 feasibility checker.
+    - Computes multi-factor ranking scores (Delay 35%, Transit 25%, Cost 25%, Availability 15%).
+    - Generates a candidate RecoveryPlan proposal with status PROPOSED.
+    - Does not modify bookings or commit operational state changes.
+
+    Enforces CHC manager authorization and tenant isolation.
+    """
+    return generate_breakdown_recovery_alternatives(
+        db=db,
+        breakdown_id=breakdown_id,
+        current_user=current_user,
+        persist_proposed_plan=True,
+    )
+
+
+@router.get(
+    "/{breakdown_id}/recovery-alternatives",
+    response_model=BreakdownRecoveryResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve recovery alternatives recommendations and ranking queue",
+)
+def get_recovery_alternatives(
+    breakdown_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> BreakdownRecoveryResponse:
+    """Retrieve evaluated recovery alternatives and ranking recommendations
+
+    for a machine breakdown incident without modifying state.
+    """
+    return generate_breakdown_recovery_alternatives(
+        db=db,
+        breakdown_id=breakdown_id,
+        current_user=current_user,
+        persist_proposed_plan=False,
     )
 
 
@@ -138,4 +200,87 @@ def list_breakdowns(
         total=total,
         page=page,
         size=limit,
+    )
+
+
+@router.get(
+    "/{breakdown_id}/recovery-plans/{plan_id}",
+    response_model=RecoveryPlanResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve recovery plan details for a specific breakdown",
+)
+def get_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanResponse:
+    """Retrieve details and candidate items for a recovery plan under a breakdown incident."""
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return RecoveryPlanResponse.model_validate(plan)
+
+
+@router.post(
+    "/{breakdown_id}/recovery-plans/{plan_id}/approve",
+    response_model=RecoveryPlanExecutionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Approve and execute a proposed recovery plan for a breakdown",
+)
+def approve_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanExecutionResponse:
+    """Approve and atomically execute a proposed recovery plan under a breakdown incident."""
+    client_ip = request.client.host if request.client else None
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return approve_and_execute_recovery_plan(
+        db=db,
+        plan_id=plan_id,
+        current_user=current_user,
+        ip_address=client_ip,
+    )
+
+
+@router.post(
+    "/{breakdown_id}/recovery-plans/{plan_id}/reject",
+    response_model=RecoveryPlanExecutionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reject a proposed recovery plan for a breakdown",
+)
+def reject_breakdown_recovery_plan(
+    breakdown_id: int,
+    plan_id: int,
+    request: Request,
+    payload: RecoveryPlanRejectRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("SUPERADMIN", "CHC_MANAGER")),
+) -> RecoveryPlanExecutionResponse:
+    """Reject a proposed recovery plan under a breakdown incident."""
+    client_ip = request.client.host if request.client else None
+    reason = payload.reason if payload else None
+    plan = get_recovery_plan(db=db, plan_id=plan_id, current_user=current_user)
+    if plan.breakdown_id != breakdown_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Recovery plan #{plan_id} does not belong to breakdown #{breakdown_id}",
+        )
+    return reject_recovery_plan(
+        db=db,
+        plan_id=plan_id,
+        current_user=current_user,
+        reason=reason,
+        ip_address=client_ip,
     )

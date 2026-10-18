@@ -57,6 +57,9 @@ class _EligibleJob:
         requested_start_date: date,
         requested_end_date: date,
         existing_attachment_ids: list[int] | None = None,
+        selected_machine_id: int | None = None,
+        selected_date: date | None = None,
+        selected_slot: str | None = None,
     ) -> None:
         self.service_request_id = service_request_id
         self.booking_id = booking_id
@@ -68,6 +71,9 @@ class _EligibleJob:
         self.requested_start_date = requested_start_date
         self.requested_end_date = requested_end_date
         self.existing_attachment_ids = existing_attachment_ids or []
+        self.selected_machine_id = selected_machine_id
+        self.selected_date = selected_date
+        self.selected_slot = selected_slot
 
 
 def generate_candidate_schedule(
@@ -129,6 +135,9 @@ def generate_candidate_schedule(
                     field_longitude=sr.field_longitude,
                     requested_start_date=sr.requested_start_date,
                     requested_end_date=sr.requested_end_date,
+                    selected_machine_id=sr.selected_machine_id,
+                    selected_date=sr.selected_date,
+                    selected_slot=sr.selected_slot,
                 )
             )
 
@@ -157,6 +166,9 @@ def generate_candidate_schedule(
                     requested_start_date=sr.requested_start_date,
                     requested_end_date=sr.requested_end_date,
                     existing_attachment_ids=att_ids,
+                    selected_machine_id=sr.selected_machine_id or bk.machine_id,
+                    selected_date=sr.selected_date or bk.scheduled_date,
+                    selected_slot=sr.selected_slot or bk.scheduled_slot,
                 )
             )
 
@@ -238,23 +250,40 @@ def generate_candidate_schedule(
             if a.category.upper() in target_categories or a.id in job.existing_attachment_ids
         ]
 
+        # Authority Rule: If farmer explicitly selected a machine, evaluate ONLY that machine.
+        # No silent substitution is allowed!
+        if job.selected_machine_id is not None:
+            candidate_machines = [m for m in available_machines if m.id == job.selected_machine_id]
+            if not candidate_machines:
+                job_reasons.append(
+                    f"Selected machine (ID {job.selected_machine_id}) is currently unavailable in CHC fleet. "
+                    "Farmer re-selection required."
+                )
+        else:
+            candidate_machines = sorted(
+                available_machines, key=lambda m: (m.horsepower, m.hourly_rate)
+            )
+
         # Prioritize FULL_DAY for larger acreage (> 4 acres)
         preferred_slots = (
             ["FULL_DAY", "HALF_DAY_MORNING", "HALF_DAY_AFTERNOON"]
             if job.acreage > 4.0
             else ["HALF_DAY_MORNING", "HALF_DAY_AFTERNOON", "FULL_DAY"]
         )
+        if job.selected_slot and job.selected_slot in preferred_slots:
+            preferred_slots = [job.selected_slot] + [s for s in preferred_slots if s != job.selected_slot]
 
         # Iterate through target dates within requested window
         delta_days = (latest - earliest).days + 1
-        for d_offset in range(delta_days):
-            target_date = earliest + date.resolution * d_offset
+        dates_to_try = [earliest + date.resolution * d_offset for d_offset in range(delta_days)]
+        if job.selected_date and job.selected_date in dates_to_try:
+            dates_to_try.remove(job.selected_date)
+            dates_to_try.insert(0, job.selected_date)
 
+        for target_date in dates_to_try:
             for slot in preferred_slots:
                 # Find compatible machine-operator combinations
-                for machine in sorted(
-                    available_machines, key=lambda m: (m.horsepower, m.hourly_rate)
-                ):
+                for machine in candidate_machines:
                     # Check intra-schedule machine conflict
                     m_collision = any(
                         m_id == machine.id and s_date == target_date and slots_overlap(slot, s_slot)
@@ -362,6 +391,11 @@ def generate_candidate_schedule(
         if not job_scheduled:
             # Deduplicate reasons while preserving order
             unique_reasons: list[str] = []
+            if job.selected_machine_id is not None:
+                unique_reasons.append(
+                    f"Farmer-selected machine (ID {job.selected_machine_id}) could not be feasibly scheduled in requested window. "
+                    "Silent substitution is prohibited. Farmer must select again from refreshed options."
+                )
             for r in job_reasons:
                 if r not in unique_reasons:
                     unique_reasons.append(r)
@@ -408,6 +442,7 @@ def apply_approved_schedule(
     - Manager role and CHC authorization.
     - Schedule existence and PROPOSED status (rejects duplicate or rejected approval).
     - Concurrency safety: re-checks all proposed slots against live bookings before mutating.
+    - Authority rule: Farmer makes final machine choice; silent substitution is strictly prohibited.
     - Transactionally creates/updates operational Bookings and calendar availability slots.
     """
     schedule = schedule_store.get(schedule_id)
@@ -429,6 +464,21 @@ def apply_approved_schedule(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot approve a rejected schedule",
         )
+
+    # Authority verification: ensure no machine was silently substituted contrary to farmer selection
+    for assignment in schedule.candidate_assignments:
+        sr = db.execute(
+            select(ServiceRequest).where(ServiceRequest.id == assignment.service_request_id)
+        ).scalar_one_or_none()
+        if sr and sr.selected_machine_id and assignment.machine_id != sr.selected_machine_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Machine substitution prohibited: Service request {sr.id} was selected by farmer for machine "
+                    f"{sr.selected_machine_id}, but candidate schedule proposes machine {assignment.machine_id}. "
+                    "Silent machine substitution is not permitted. Ask farmer to select from refreshed options."
+                ),
+            )
 
     # Concurrency verification: verify no conflicting booking occurred in the interim
     for assignment in schedule.candidate_assignments:

@@ -113,7 +113,7 @@ export default function CinematicHero({ onExploreClick }) {
                   _farmlife
                 </span>
                 <span className="hidden sm:inline-block px-2.5 py-0.5 text-[11px] font-medium tracking-wider uppercase text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 rounded-full">
-                  KrishiNiyojak
+                  NITI
                 </span>
               </div>
 
@@ -249,7 +249,7 @@ export default function CinematicHero({ onExploreClick }) {
 
               {/* Minimal Brand Identifier */}
               <div className="text-sm font-semibold tracking-wider font-display text-white/90">
-                KrishiNiyojak Fleet Architecture
+                NITI Fleet Architecture
               </div>
 
               {/* Social / Direct Action Links (Top-Right) */}
@@ -328,7 +328,7 @@ export default function CinematicHero({ onExploreClick }) {
               className="max-w-2xl mx-auto text-center pt-2"
             >
               <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-light">
-                KrishiNiyojak custom hiring coordination represents the gold standard for regional farm mechanization.
+                NITI custom hiring coordination represents the gold standard for regional farm mechanization.
                 Engineered to eliminate crop window vulnerabilities across seasonal sowing, harvest cycles, and unexpected in-field machinery disruptions.
               </p>
 

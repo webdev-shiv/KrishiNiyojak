@@ -100,7 +100,7 @@ export default function HowItWorks({ lang, onListClick }) {
           </div>
 
           <h2 className="section-title">
-            {lang === 'en' ? 'How AgriLink Works' : 'एग्रीलिंक कैसे काम करता है?'}
+            {lang === 'en' ? 'How NITI Works' : 'नीति (NITI) कैसे काम करता है?'}
           </h2>
 
           <p className="section-subtitle" style={{ margin: '0 auto' }}>

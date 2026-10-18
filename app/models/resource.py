@@ -67,6 +67,9 @@ class Machine(Base):
     hourly_rate: Mapped[Decimal] = mapped_column(
         Numeric(10, 2), default=Decimal("0.00"), nullable=False
     )
+    working_speed_kmh: Mapped[float] = mapped_column(Float, default=6.0, nullable=False)
+    coverage_width_m: Mapped[float] = mapped_column(Float, default=2.0, nullable=False)
+    field_efficiency_factor: Mapped[float] = mapped_column(Float, default=0.8, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
